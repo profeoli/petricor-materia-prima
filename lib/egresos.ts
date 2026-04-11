@@ -1,7 +1,7 @@
 export type ConceptoEgreso =
   | 'Proveedores'
   | 'Fijos'
-  | 'RRH '
+  | 'RRHH'
   | 'Limpieza'
   | 'Mantenimiento'
   | 'Caja'
