@@ -27,14 +27,15 @@ export async function POST(req: NextRequest) {
           {
             role: 'user',
             content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: mimeType,
-                  data: image,
-                },
-              },
+              mimeType === 'application/pdf'
+                ? {
+                    type: 'document',
+                    source: { type: 'base64', media_type: mimeType, data: image },
+                  }
+                : {
+                    type: 'image',
+                    source: { type: 'base64', media_type: mimeType, data: image },
+                  },
               {
                 type: 'text',
                 text: 'Sos un asistente de extracción de datos de facturas para un restaurante argentino.\nAnalizá la imagen y devolvé UNICAMENTE un JSON con esta estructura, sin markdown, sin texto extra:\n{\n  "proveedor": "string",\n  "numeroFactura": "string",\n  "fecha": "DD/MM/AAAA",\n  "items": [\n    {\n      "descripcion": "string",\n      "cantidad": 0,\n      "unidad": "string",\n      "precioUnitario": 0,\n      "precioTotal": 0\n    }\n  ],\n  "totalFactura": 0\n}\nSi no podés leer algún campo, poné null.',
