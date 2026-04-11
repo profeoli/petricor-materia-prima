@@ -1,1 +1,48 @@
-'use client'; import React from 'react'; import { CalendarDays, X } from 'lucide-react'; import { cn } from '@/lib/utils'; interface DateRangePickerProps { availableDates: string[]; // "YYYY-MM-DD" sorted dateFrom: string; dateTo: string; onChange: (from: string, to: string) => void; } export function DateRangePicker({ availableDates, dateFrom, dateTo, onChange }: DateRangePickerProps) { if (availableDates.length === 0) return null; const minDate = availableDates[0]; const maxDate = availableDates[availableDates.length - 1]; const isFiltered = dateFrom !== minDate || dateTo !== maxDate; const handleReset = () => onChange(minDate, maxDate); return ( <div className="flex flex-wrap items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl"> <div className="flex items-center gap-2 text-blue-700"> <CalendarDays className="w-4 h-4 flex-shrink-0" /> <span className="text-xs font-semibold uppercase tracking-wide">Filtrar por fecha</span> </div> <div className="flex items-center gap-2 flex-wrap"> <div className="flex items-center gap-1.5"> <label className="text-xs text-gray-500 font-medium">Desde</label> <input type="date" value={dateFrom} min={minDate} max={dateTo} onChange={(e) => onChange(e.target.value, dateTo)} className={cn( 'text-xs border rounded-lg px-2.5 py-1.5 bg-white shadow-sm', 'border-gray-300 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent' )} /> </div> <span className="text-gray-400 text-xs">—</span> <div className="flex items-center gap-1.5"> <label className="text-xs text-gray-500 font-medium">Hasta</label> <input type="date" value={dateTo} min={dateFrom} max={maxDate} onChange={(e) => onChange(dateFrom, e.target.value)} className={cn( 'text-xs border rounded-lg px-2.5 py-1.5 bg-white shadow-sm', 'border-gray-300 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent' )} /> </div> {isFiltered && ( <button onClick={handleReset} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 px-2 py-1.5 rounded-lg hover:bg-blue-100 transition-colors" > <X className="w-3 h-3" /> Limpiar filtro </button> )} </div> <span className="text-xs text-gray-400 ml-auto"> {availableDates.filter((d) => d >= dateFrom && d <= dateTo).length} de {availableDates.length} fechas </span> </div> ); }
+'use client';
+
+import React from 'react';
+import { cn } from '@/lib/utils';
+
+interface DateRangePickerProps {
+  availableDates: string[];
+  dateFrom: string;
+  dateTo: string;
+  onChange: (from: string, to: string) => void;
+}
+
+export function DateRangePicker({
+  availableDates,
+  dateFrom,
+  dateTo,
+  onChange,
+}: DateRangePickerProps) {
+  return (
+    <div className={cn('flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200')}>
+      <span className="text-xs font-medium text-gray-600">Filtrar por fecha:</span>
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-gray-500">Desde</label>
+        <select
+          value={dateFrom}
+          onChange={(e) => onChange(e.target.value, dateTo)}
+          className="text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        >
+          {availableDates.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-gray-500">Hasta</label>
+        <select
+          value={dateTo}
+          onChange={(e) => onChange(dateFrom, e.target.value)}
+          className="text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        >
+          {availableDates.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
