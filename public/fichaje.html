@@ -99,10 +99,18 @@ const SB_URL='https://puyhlwuxhyywattyydmf.supabase.co';
 const SB_KEY='sb_publishable_eLnTvR4daqXX9OCXkKF68A_GVuvyYfW';
 const TABLE='Fichajes';
 const LS_USER='ptc_saved_user';
+const CIERRE_HORA=22;
 
 function hdrs(){
   return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
 }
+
+function todayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function fmtTime(ts){return new Date(ts).toTimeString().slice(0,8);}
 
 async function getActive(name){
   try{
@@ -110,6 +118,22 @@ async function getActive(name){
     const d=await r.json();
     return d&&d.length?d[0]:null;
   }catch{return null;}
+}
+
+async function cerrarAutomatico(record){
+  // Construir timestamp de cierre: fecha del fichaje a las 22:00
+  const [y,m,d] = record.fecha.split('-').map(Number);
+  const cierreTs = new Date(y, m-1, d, CIERRE_HORA, 0, 0).getTime();
+  const duracion = cierreTs - record.entrada;
+  showSync(true);
+  try{
+    await fetch(`${SB_URL}/rest/v1/${TABLE}?id=eq.${record.id}`,{
+      method:'PATCH',
+      headers:{...hdrs(),'Prefer':'return=minimal'},
+      body:JSON.stringify({salida:cierreTs, duracion, auto_cierre:true})
+    });
+  }catch(e){console.error(e);}
+  showSync(false);
 }
 
 async function insertRec(rec){
@@ -131,13 +155,6 @@ async function updateRec(id,upd){
 }
 
 function showSync(s){document.getElementById('sync-status').style.display=s?'flex':'none';}
-
-function todayKey(){
-  const d=new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-function fmtTime(ts){return new Date(ts).toTimeString().slice(0,8);}
 
 let sessionInterval,currentActive=null;
 
@@ -178,6 +195,17 @@ async function refreshUI(){
 
   btn.disabled=true;
   const active=await getActive(name);
+
+  // Si hay turno abierto de un día anterior → cerrar automáticamente a las 22hs
+  if(active && active.fecha !== todayKey()){
+    await cerrarAutomatico(active);
+    currentActive=null;
+    btn.disabled=false;btn.textContent='Registrar entrada';btn.className='action-btn btn-entrada';
+    badge.className='status-badge idle';stxt.textContent='Sin fichar';sc.style.display='none';
+    toast('Tu turno del '+active.fecha+' fue cerrado automáticamente a las 22:00');
+    return;
+  }
+
   currentActive=active;
 
   if(active){
@@ -200,7 +228,10 @@ async function handleBtn(){
     await updateRec(currentActive.id,{salida:now,duracion:now-currentActive.entrada});
     toast('Salida registrada a las '+fmtTime(now));
   }else{
-    await insertRec({record_id:now+'_'+Math.random().toString(36).slice(2),name,fecha:todayKey(),entrada:now,salida:null,duracion:null});
+    await insertRec({
+      record_id:now+'_'+Math.random().toString(36).slice(2),
+      name,fecha:todayKey(),entrada:now,salida:null,duracion:null,auto_cierre:false
+    });
     toast('Entrada registrada a las '+fmtTime(now));
   }
   await refreshUI();
@@ -209,7 +240,7 @@ async function handleBtn(){
 function toast(msg){
   const t=document.createElement('div');
   t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1A18;color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:500;z-index:999;white-space:nowrap;';
-  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
 
 const sel=document.getElementById('emp-select');
