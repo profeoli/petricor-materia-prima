@@ -37,10 +37,10 @@ function fmtHours(ms: number) {
 
 function msToH(ms: number) { return ms / 3600000; }
 
-function countWeekdays(y: number, m: number) {
-  const days = new Date(y, m, 0).getDate();
+function countWeekdays(y: number, m: number, hastaElDia?: number) {
+  const limite = hastaElDia ?? new Date(y, m, 0).getDate();
   let count = 0;
-  for (let d = 1; d <= days; d++) {
+  for (let d = 1; d <= limite; d++) {
     const day = new Date(y, m - 1, d).getDay();
     if (day !== 0 && day !== 6) count++;
   }
