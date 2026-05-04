@@ -1,12 +1,13 @@
 'use client';
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Users, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Users, Clock, TrendingUp, AlertCircle, Link2, Check } from 'lucide-react';
 
 const SB_URL = 'https://puyhlwuxhyywattyydmf.supabase.co';
 const SB_KEY = 'sb_publishable_eLnTvR4daqXX9OCXkKF68A_GVuvyYfW';
 const TABLE = 'Fichajes';
 const HORA_EXTRA_DESDE = 9;
+const FICHAJE_URL = 'https://petricor-materia-prima.vercel.app/fichaje.html';
 
 const EMPLEADOS = [
   'Galnares Martina','Saavedra Chocobar Isais','Chacón Tortoza Moises',
@@ -42,7 +43,6 @@ function countWeekdays(y: number, m: number, hastaElDia?: number) {
   let count = 0;
   for (let d = 1; d <= limite; d++) {
     const day = new Date(y, m - 1, d).getDay();
-    // 0=domingo, 1=lunes, 6=sábado — excluimos lunes también
     if (day !== 0 && day !== 1 && day !== 6) count++;
   }
   return count;
@@ -52,6 +52,7 @@ export default function AsistenciaPage() {
   const [fichajes, setFichajes] = useState<Fichaje[]>([]);
   const [loading, setLoading] = useState(true);
   const [empFilter, setEmpFilter] = useState('');
+  const [copied, setCopied] = useState(false);
   const [monthFilter, setMonthFilter] = useState(() => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
@@ -74,6 +75,12 @@ export default function AsistenciaPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  function copyLink() {
+    navigator.clipboard.writeText(FICHAJE_URL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   const totalHs = fichajes.reduce((s, f) => s + msToH(f.duracion || 0), 0);
   const extraHs = fichajes.reduce((s, f) => {
     const h = msToH(f.duracion || 0);
@@ -83,7 +90,7 @@ export default function AsistenciaPage() {
   const [y, m] = monthFilter.split('-').map(Number);
   const empsFiltrados = empFilter ? [empFilter] : EMPLEADOS;
   const hoy = new Date();
-const diasLaborables = countWeekdays(y, m, hoy.getDate());
+  const diasLaborables = countWeekdays(y, m, hoy.getDate());
   const diasTrabajados = new Set(fichajes.map(f => f.name + '_' + f.fecha)).size;
   const ausencias = Math.max(0, empsFiltrados.length * diasLaborables - diasTrabajados);
 
@@ -102,12 +109,18 @@ const diasLaborables = countWeekdays(y, m, hoy.getDate());
               <p className="text-xs text-gray-500 mt-0.5">Control de fichajes del personal</p>
             </div>
           </div>
+          <button
+            onClick={copyLink}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Link2 className="w-4 h-4" />}
+            {copied ? 'Copiado' : 'Link empleados'}
+          </button>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
 
-        {/* Filtros */}
         <div className="flex gap-3">
           <select
             value={empFilter}
@@ -131,7 +144,6 @@ const diasLaborables = countWeekdays(y, m, hoy.getDate());
           </select>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white border border-gray-200 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -169,7 +181,6 @@ const diasLaborables = countWeekdays(y, m, hoy.getDate());
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700">Detalle de fichajes</h2>
