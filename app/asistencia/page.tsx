@@ -42,7 +42,8 @@ function countWeekdays(y: number, m: number, hastaElDia?: number) {
   let count = 0;
   for (let d = 1; d <= limite; d++) {
     const day = new Date(y, m - 1, d).getDay();
-    if (day !== 0 && day !== 6) count++;
+    // 0=domingo, 1=lunes, 6=sábado — excluimos lunes también
+    if (day !== 0 && day !== 1 && day !== 6) count++;
   }
   return count;
 }
