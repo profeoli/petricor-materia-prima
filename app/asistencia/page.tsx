@@ -24,6 +24,7 @@ interface Fichaje {
   entrada: number;
   salida: number | null;
   duracion: number | null;
+  auto_cierre: boolean;
 }
 
 function fmtTime(ts: number) {
