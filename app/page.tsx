@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BarChart3, Receipt, Package, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { BarChart3, Receipt, Package, TrendingUp, AlertCircle, CheckCircle2, Users } from 'lucide-react';
 import { getEgresos, getKPIs } from '@/lib/egresos';
 import { formatARS } from '@/lib/utils';
 
@@ -35,10 +35,9 @@ export default function HomePage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        {/* Módulos */}
         <section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Módulos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Link href="/conciliacion" className="group bg-white border border-gray-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-md transition-all">
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
                 <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -63,6 +62,14 @@ export default function HomePage() {
               <p className="text-sm text-gray-500">Facturas vencidas y próximas a vencer.</p>
             </Link>
 
+            <Link href="/asistencia" className="group bg-white border border-gray-200 rounded-2xl p-6 hover:border-green-300 hover:shadow-md transition-all">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-100 transition-colors">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Asistencia</h3>
+              <p className="text-sm text-gray-500">Fichajes del personal, horas trabajadas y horas extra.</p>
+            </Link>
+
             <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 opacity-50 cursor-not-allowed">
               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4">
                 <Package className="w-5 h-5 text-gray-400" />
@@ -73,7 +80,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Resumen del mes */}
         <section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
             Resumen — {mesNombre}
