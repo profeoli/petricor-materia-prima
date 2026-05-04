@@ -81,7 +81,8 @@ export default function AsistenciaPage() {
 
   const [y, m] = monthFilter.split('-').map(Number);
   const empsFiltrados = empFilter ? [empFilter] : EMPLEADOS;
-  const diasLaborables = countWeekdays(y, m);
+  const hoy = new Date();
+const diasLaborables = countWeekdays(y, m, hoy.getDate());
   const diasTrabajados = new Set(fichajes.map(f => f.name + '_' + f.fecha)).size;
   const ausencias = Math.max(0, empsFiltrados.length * diasLaborables - diasTrabajados);
 
