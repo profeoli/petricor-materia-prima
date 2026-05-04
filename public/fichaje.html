@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Petricor — Fichaje</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F7F5F0;
+  --card:#FFFFFF;
+  --text:#1A1A18;
+  --muted:#888780;
+  --border:#E8E6E0;
+  --green:#3B6D11;
+  --green-bg:#EAF3DE;
+  --red:#A32D2D;
+  --red-bg:#FCEBEB;
+  --amber:#854F0B;
+  --amber-bg:#FAEEDA;
+  --radius:16px;
+}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.emp-header{
+  padding:52px 24px 20px;
+  text-align:center;
+}
+.logo{
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+.emp-header h1{
+  font-size:26px;
+  font-weight:300;
+  color:var(--text);
+  letter-spacing:-0.5px;
+}
+.user-selector{
+  padding:0 24px 28px;
+}
+.selector-label{
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+.selector-wrap{position:relative}
+select{
+  width:100%;
+  padding:16px 44px 16px 18px;
+  font-family:'DM Sans',sans-serif;
+  font-size:16px;
+  color:var(--text);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  appearance:none;
+  cursor:pointer;
+  outline:none;
+  transition:border-color 0.2s;
+}
+select:focus{border-color:#888}
+.selector-arrow{
+  position:absolute;
+  right:16px;top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+  color:var(--muted);
+  font-size:16px;
+}
+.clock-section{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:0 24px 60px;
+  gap:28px;
+}
+.time-display{text-align:center}
+.current-time{
+  font-family:'DM Mono',monospace;
+  font-size:54px;
+  font-weight:400;
+  letter-spacing:-1px;
+  color:var(--text);
+  line-height:1;
+}
+.current-date{
+  font-size:14px;
+  color:var(--muted);
+  margin-top:8px;
+}
+.status-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 20px;
+  border-radius:100px;
+  font-size:14px;
+  font-weight:500;
+}
+.status-badge.idle{background:var(--bg);border:1px solid var(--border);color:var(--muted)}
+.status-badge.working{background:var(--green-bg);color:var(--green)}
+.badge-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.session-info{
+  text-align:center;
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.7;
+}
+.session-time{
+  font-family:'DM Mono',monospace;
+  font-size:24px;
+  font-weight:400;
+  color:var(--text);
+  margin-bottom:2px;
+}
+.action-btn{
+  width:100%;
+  max-width:320px;
+  padding:20px;
+  border:none;
+  border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;
+  font-size:17px;
+  font-weight:500;
+  cursor:pointer;
+  transition:transform 0.1s,opacity 0.2s;
+  letter-spacing:-0.2px;
+}
+.action-btn:active{transform:scale(0.97)}
+.action-btn:disabled{opacity:0.35;cursor:not-allowed}
+.btn-entrada{background:var(--text);color:#fff}
+.btn-salida{background:#fff;color:var(--text);border:1.5px solid var(--text)}
+</style>
+</head>
+<body>
+
+<div class="emp-header">
+  <div class="logo">Petricor</div>
+  <h1>Control de asistencia</h1>
+</div>
+
+<div class="user-selector">
+  <div class="selector-label">¿Quién sos?</div>
+  <div class="selector-wrap">
+    <select id="emp-select">
+      <option value="">— Elegí tu nombre —</option>
+      <option>Galnares Martina</option>
+      <option>Saavedra Chocobar Isais</option>
+      <option>Chacón Tortoza Moises</option>
+      <option>Chamorro Luciano</option>
+      <option>Barrionuevo Martín</option>
+      <option>Rojas Gabriela</option>
+      <option>Chacon Sebastián</option>
+      <option>Papa Guadalupe</option>
+      <option>Mejía Facundo</option>
+      <option>Isas Nicole</option>
+    </select>
+    <div class="selector-arrow">▾</div>
+  </div>
+</div>
+
+<div class="clock-section">
+  <div class="time-display">
+    <div class="current-time" id="clock">00:00:00</div>
+    <div class="current-date" id="date-display"></div>
+  </div>
+
+  <div class="status-badge idle" id="status-badge">
+    <span class="badge-dot"></span>
+    <span id="status-text">Sin fichar</span>
+  </div>
+
+  <div id="session-container" style="display:none">
+    <div class="session-info">
+      <div class="session-time" id="session-timer">0:00:00</div>
+      Tiempo en turno
+    </div>
+  </div>
+
+  <button class="action-btn btn-entrada" id="main-btn" disabled>
+    Registrar entrada
+  </button>
+</div>
+
+<script>
+const LS_RECORDS = 'ptc_records';
+const LS_SAVED_USER = 'ptc_saved_user';
+
+function getRecords(){
+  try{ return JSON.parse(localStorage.getItem(LS_RECORDS)||'[]'); }
+  catch(e){ return []; }
+}
+function saveRecords(r){ localStorage.setItem(LS_RECORDS,JSON.stringify(r)); }
+
+function getActiveRecord(name){
+  return getRecords().find(r=>r.name===name&&!r.salida);
+}
+
+function todayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatTime(ts){
+  return new Date(ts).toTimeString().slice(0,8);
+}
+
+let sessionInterval;
+
+function startClock(){
+  const days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  function tick(){
+    const now=new Date();
+    document.getElementById('clock').textContent=now.toTimeString().slice(0,8);
+    document.getElementById('date-display').textContent=
+      `${days[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`;
+  }
+  tick();
+  setInterval(tick,1000);
+}
+
+function updateSessionTimer(startTs){
+  clearInterval(sessionInterval);
+  function tick(){
+    const e=Date.now()-startTs;
+    const h=Math.floor(e/3600000);
+    const m=Math.floor((e%3600000)/60000);
+    const s=Math.floor((e%60000)/1000);
+    document.getElementById('session-timer').textContent=
+      `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  tick();
+  sessionInterval=setInterval(tick,1000);
+}
+
+function refreshUI(){
+  const name=document.getElementById('emp-select').value;
+  const btn=document.getElementById('main-btn');
+  const badge=document.getElementById('status-badge');
+  const statusText=document.getElementById('status-text');
+  const sessionCont=document.getElementById('session-container');
+
+  clearInterval(sessionInterval);
+
+  if(!name){
+    btn.disabled=true;
+    btn.textContent='Registrar entrada';
+    btn.className='action-btn btn-entrada';
+    badge.className='status-badge idle';
+    statusText.textContent='Sin fichar';
+    sessionCont.style.display='none';
+    return;
+  }
+
+  const active=getActiveRecord(name);
+  if(active){
+    btn.disabled=false;
+    btn.textContent='Registrar salida';
+    btn.className='action-btn btn-salida';
+    badge.className='status-badge working';
+    statusText.textContent='En turno desde '+formatTime(active.entrada);
+    sessionCont.style.display='block';
+    updateSessionTimer(active.entrada);
+  } else {
+    btn.disabled=false;
+    btn.textContent='Registrar entrada';
+    btn.className='action-btn btn-entrada';
+    badge.className='status-badge idle';
+    statusText.textContent='Sin fichar';
+    sessionCont.style.display='none';
+  }
+}
+
+function handleBtn(){
+  const name=document.getElementById('emp-select').value;
+  if(!name) return;
+  const active=getActiveRecord(name);
+  const records=getRecords();
+  const now=Date.now();
+
+  if(active){
+    const idx=records.findIndex(r=>r.id===active.id);
+    records[idx].salida=now;
+    records[idx].duracion=now-active.entrada;
+    saveRecords(records);
+    showToast('Salida registrada a las '+formatTime(now));
+  } else {
+    const todayRec=records.find(r=>r.name===name&&r.fecha===todayKey()&&r.salida);
+    if(todayRec){
+      if(!confirm('Ya registraste un turno hoy. ¿Registrás otro de todas formas?')) return;
+    }
+    records.push({
+      id:Date.now()+'_'+Math.random().toString(36).slice(2),
+      name,
+      fecha:todayKey(),
+      entrada:now,
+      salida:null,
+      duracion:null
+    });
+    saveRecords(records);
+    showToast('Entrada registrada a las '+formatTime(now));
+  }
+  refreshUI();
+}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1A18;color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:500;z-index:999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.2);';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2800);
+}
+
+const sel=document.getElementById('emp-select');
+const saved=localStorage.getItem(LS_SAVED_USER);
+if(saved){
+  for(let o of sel.options){ if(o.value===saved){o.selected=true;break;} }
+}
+
+sel.addEventListener('change',function(){
+  localStorage.setItem(LS_SAVED_USER,this.value);
+  refreshUI();
+});
+
+document.getElementById('main-btn').addEventListener('click',handleBtn);
+
+startClock();
+refreshUI();
+</script>
+</body>
+</html>
