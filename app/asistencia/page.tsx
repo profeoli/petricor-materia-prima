@@ -213,7 +213,18 @@ export default function AsistenciaPage() {
                         <td className="px-5 py-3 font-medium text-gray-900">{f.name}</td>
                         <td className="px-4 py-3 text-gray-600">{fd}/{fm}/{fy}</td>
                         <td className="px-4 py-3 font-mono text-xs text-gray-600">{fmtTime(f.entrada)}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-600">{f.salida ? fmtTime(f.salida) : '—'}</td>
+<td className="px-4 py-3 font-mono text-xs text-gray-600">
+  {f.salida ? (
+    <span className="flex items-center gap-2">
+      {fmtTime(f.salida)}
+      {f.auto_cierre && (
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+          Auto
+        </span>
+      )}
+    </span>
+  ) : '—'}
+</td>
                         <td className="px-4 py-3 text-gray-700 font-medium">{f.duracion ? fmtHours(f.duracion) : '—'}</td>
                         <td className="px-4 py-3">
                           {extra > 0 ? (
