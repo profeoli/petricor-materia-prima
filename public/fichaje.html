@@ -8,145 +8,36 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#F7F5F0;
-  --card:#FFFFFF;
-  --text:#1A1A18;
-  --muted:#888780;
-  --border:#E8E6E0;
-  --green:#3B6D11;
-  --green-bg:#EAF3DE;
-  --red:#A32D2D;
-  --red-bg:#FCEBEB;
-  --amber:#854F0B;
-  --amber-bg:#FAEEDA;
-  --radius:16px;
+  --bg:#F7F5F0;--card:#FFFFFF;--text:#1A1A18;--muted:#888780;
+  --border:#E8E6E0;--green:#3B6D11;--green-bg:#EAF3DE;--radius:16px;
 }
-body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-}
-.emp-header{
-  padding:52px 24px 20px;
-  text-align:center;
-}
-.logo{
-  font-size:12px;
-  font-weight:500;
-  letter-spacing:0.14em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-bottom:10px;
-}
-.emp-header h1{
-  font-size:26px;
-  font-weight:300;
-  color:var(--text);
-  letter-spacing:-0.5px;
-}
-.user-selector{
-  padding:0 24px 28px;
-}
-.selector-label{
-  font-size:12px;
-  font-weight:500;
-  letter-spacing:0.08em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-bottom:10px;
-}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+.emp-header{padding:52px 24px 20px;text-align:center}
+.logo{font-size:12px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.emp-header h1{font-size:26px;font-weight:300;letter-spacing:-0.5px}
+.user-selector{padding:0 24px 28px}
+.selector-label{font-size:12px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 .selector-wrap{position:relative}
-select{
-  width:100%;
-  padding:16px 44px 16px 18px;
-  font-family:'DM Sans',sans-serif;
-  font-size:16px;
-  color:var(--text);
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:12px;
-  appearance:none;
-  cursor:pointer;
-  outline:none;
-  transition:border-color 0.2s;
-}
+select{width:100%;padding:16px 44px 16px 18px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:12px;appearance:none;cursor:pointer;outline:none;transition:border-color 0.2s}
 select:focus{border-color:#888}
-.selector-arrow{
-  position:absolute;
-  right:16px;top:50%;
-  transform:translateY(-50%);
-  pointer-events:none;
-  color:var(--muted);
-  font-size:16px;
-}
-.clock-section{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:0 24px 60px;
-  gap:28px;
-}
-.time-display{text-align:center}
-.current-time{
-  font-family:'DM Mono',monospace;
-  font-size:54px;
-  font-weight:400;
-  letter-spacing:-1px;
-  color:var(--text);
-  line-height:1;
-}
-.current-date{
-  font-size:14px;
-  color:var(--muted);
-  margin-top:8px;
-}
-.status-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:10px 20px;
-  border-radius:100px;
-  font-size:14px;
-  font-weight:500;
-}
+.selector-arrow{position:absolute;right:16px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:16px}
+.clock-section{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px 60px;gap:28px}
+.current-time{font-family:'DM Mono',monospace;font-size:54px;font-weight:400;letter-spacing:-1px;line-height:1}
+.current-date{font-size:14px;color:var(--muted);margin-top:8px;text-align:center}
+.status-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:100px;font-size:14px;font-weight:500}
 .status-badge.idle{background:var(--bg);border:1px solid var(--border);color:var(--muted)}
 .status-badge.working{background:var(--green-bg);color:var(--green)}
 .badge-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
-.session-info{
-  text-align:center;
-  font-size:13px;
-  color:var(--muted);
-  line-height:1.7;
-}
-.session-time{
-  font-family:'DM Mono',monospace;
-  font-size:24px;
-  font-weight:400;
-  color:var(--text);
-  margin-bottom:2px;
-}
-.action-btn{
-  width:100%;
-  max-width:320px;
-  padding:20px;
-  border:none;
-  border-radius:var(--radius);
-  font-family:'DM Sans',sans-serif;
-  font-size:17px;
-  font-weight:500;
-  cursor:pointer;
-  transition:transform 0.1s,opacity 0.2s;
-  letter-spacing:-0.2px;
-}
+.session-info{text-align:center;font-size:13px;color:var(--muted);line-height:1.7}
+.session-time{font-family:'DM Mono',monospace;font-size:24px;font-weight:400;color:var(--text);margin-bottom:2px}
+.action-btn{width:100%;max-width:320px;padding:20px;border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:17px;font-weight:500;cursor:pointer;transition:transform 0.1s,opacity 0.2s;letter-spacing:-0.2px}
 .action-btn:active{transform:scale(0.97)}
 .action-btn:disabled{opacity:0.35;cursor:not-allowed}
 .btn-entrada{background:var(--text);color:#fff}
 .btn-salida{background:#fff;color:var(--text);border:1.5px solid var(--text)}
+.syncing{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1s linear infinite}
 </style>
 </head>
 <body>
@@ -177,7 +68,7 @@ select:focus{border-color:#888}
 </div>
 
 <div class="clock-section">
-  <div class="time-display">
+  <div>
     <div class="current-time" id="clock">00:00:00</div>
     <div class="current-date" id="date-display"></div>
   </div>
@@ -197,153 +88,136 @@ select:focus{border-color:#888}
   <button class="action-btn btn-entrada" id="main-btn" disabled>
     Registrar entrada
   </button>
+
+  <div class="syncing" id="sync-status" style="display:none">
+    <span class="spin">⟳</span> Sincronizando...
+  </div>
 </div>
 
 <script>
-const LS_RECORDS = 'ptc_records';
-const LS_SAVED_USER = 'ptc_saved_user';
+const SB_URL='https://puyhlwuxhyywattyydmf.supabase.co';
+const SB_KEY='sb_publishable_eLnTvR4daqXX9OCXkKF68A_GVuvyYfW';
+const TABLE='Fichajes';
+const LS_USER='ptc_saved_user';
 
-function getRecords(){
-  try{ return JSON.parse(localStorage.getItem(LS_RECORDS)||'[]'); }
-  catch(e){ return []; }
+function hdrs(){
+  return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
 }
-function saveRecords(r){ localStorage.setItem(LS_RECORDS,JSON.stringify(r)); }
 
-function getActiveRecord(name){
-  return getRecords().find(r=>r.name===name&&!r.salida);
+async function getActive(name){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/${TABLE}?name=eq.${encodeURIComponent(name)}&salida=is.null&order=entrada.desc&limit=1`,{headers:hdrs()});
+    const d=await r.json();
+    return d&&d.length?d[0]:null;
+  }catch{return null;}
 }
+
+async function insertRec(rec){
+  showSync(true);
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/${TABLE}`,{method:'POST',headers:{...hdrs(),'Prefer':'return=representation'},body:JSON.stringify(rec)});
+    const d=await r.json();
+    showSync(false);
+    return d&&d[0]?d[0]:null;
+  }catch{showSync(false);return null;}
+}
+
+async function updateRec(id,upd){
+  showSync(true);
+  try{
+    await fetch(`${SB_URL}/rest/v1/${TABLE}?id=eq.${id}`,{method:'PATCH',headers:{...hdrs(),'Prefer':'return=minimal'},body:JSON.stringify(upd)});
+    showSync(false);
+  }catch{showSync(false);}
+}
+
+function showSync(s){document.getElementById('sync-status').style.display=s?'flex':'none';}
 
 function todayKey(){
   const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function formatTime(ts){
-  return new Date(ts).toTimeString().slice(0,8);
-}
+function fmtTime(ts){return new Date(ts).toTimeString().slice(0,8);}
 
-let sessionInterval;
+let sessionInterval,currentActive=null;
 
 function startClock(){
   const days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   function tick(){
-    const now=new Date();
-    document.getElementById('clock').textContent=now.toTimeString().slice(0,8);
-    document.getElementById('date-display').textContent=
-      `${days[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`;
+    const n=new Date();
+    document.getElementById('clock').textContent=n.toTimeString().slice(0,8);
+    document.getElementById('date-display').textContent=`${days[n.getDay()]}, ${n.getDate()} de ${months[n.getMonth()]}`;
   }
-  tick();
-  setInterval(tick,1000);
+  tick();setInterval(tick,1000);
 }
 
-function updateSessionTimer(startTs){
+function startSessionTimer(ts){
   clearInterval(sessionInterval);
   function tick(){
-    const e=Date.now()-startTs;
-    const h=Math.floor(e/3600000);
-    const m=Math.floor((e%3600000)/60000);
-    const s=Math.floor((e%60000)/1000);
-    document.getElementById('session-timer').textContent=
-      `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const e=Date.now()-ts;
+    const h=Math.floor(e/3600000),m=Math.floor((e%3600000)/60000),s=Math.floor((e%60000)/1000);
+    document.getElementById('session-timer').textContent=`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
-  tick();
-  sessionInterval=setInterval(tick,1000);
+  tick();sessionInterval=setInterval(tick,1000);
 }
 
-function refreshUI(){
+async function refreshUI(){
   const name=document.getElementById('emp-select').value;
   const btn=document.getElementById('main-btn');
   const badge=document.getElementById('status-badge');
-  const statusText=document.getElementById('status-text');
-  const sessionCont=document.getElementById('session-container');
-
+  const stxt=document.getElementById('status-text');
+  const sc=document.getElementById('session-container');
   clearInterval(sessionInterval);
 
   if(!name){
-    btn.disabled=true;
-    btn.textContent='Registrar entrada';
-    btn.className='action-btn btn-entrada';
-    badge.className='status-badge idle';
-    statusText.textContent='Sin fichar';
-    sessionCont.style.display='none';
-    return;
+    btn.disabled=true;btn.textContent='Registrar entrada';btn.className='action-btn btn-entrada';
+    badge.className='status-badge idle';stxt.textContent='Sin fichar';sc.style.display='none';
+    currentActive=null;return;
   }
 
-  const active=getActiveRecord(name);
+  btn.disabled=true;
+  const active=await getActive(name);
+  currentActive=active;
+
   if(active){
-    btn.disabled=false;
-    btn.textContent='Registrar salida';
-    btn.className='action-btn btn-salida';
-    badge.className='status-badge working';
-    statusText.textContent='En turno desde '+formatTime(active.entrada);
-    sessionCont.style.display='block';
-    updateSessionTimer(active.entrada);
-  } else {
-    btn.disabled=false;
-    btn.textContent='Registrar entrada';
-    btn.className='action-btn btn-entrada';
-    badge.className='status-badge idle';
-    statusText.textContent='Sin fichar';
-    sessionCont.style.display='none';
+    btn.disabled=false;btn.textContent='Registrar salida';btn.className='action-btn btn-salida';
+    badge.className='status-badge working';stxt.textContent='En turno desde '+fmtTime(active.entrada);
+    sc.style.display='block';startSessionTimer(active.entrada);
+  }else{
+    btn.disabled=false;btn.textContent='Registrar entrada';btn.className='action-btn btn-entrada';
+    badge.className='status-badge idle';stxt.textContent='Sin fichar';sc.style.display='none';
   }
 }
 
-function handleBtn(){
+async function handleBtn(){
   const name=document.getElementById('emp-select').value;
-  if(!name) return;
-  const active=getActiveRecord(name);
-  const records=getRecords();
+  if(!name)return;
   const now=Date.now();
+  document.getElementById('main-btn').disabled=true;
 
-  if(active){
-    const idx=records.findIndex(r=>r.id===active.id);
-    records[idx].salida=now;
-    records[idx].duracion=now-active.entrada;
-    saveRecords(records);
-    showToast('Salida registrada a las '+formatTime(now));
-  } else {
-    const todayRec=records.find(r=>r.name===name&&r.fecha===todayKey()&&r.salida);
-    if(todayRec){
-      if(!confirm('Ya registraste un turno hoy. ¿Registrás otro de todas formas?')) return;
-    }
-    records.push({
-      id:Date.now()+'_'+Math.random().toString(36).slice(2),
-      name,
-      fecha:todayKey(),
-      entrada:now,
-      salida:null,
-      duracion:null
-    });
-    saveRecords(records);
-    showToast('Entrada registrada a las '+formatTime(now));
+  if(currentActive){
+    await updateRec(currentActive.id,{salida:now,duracion:now-currentActive.entrada});
+    toast('Salida registrada a las '+fmtTime(now));
+  }else{
+    await insertRec({record_id:now+'_'+Math.random().toString(36).slice(2),name,fecha:todayKey(),entrada:now,salida:null,duracion:null});
+    toast('Entrada registrada a las '+fmtTime(now));
   }
-  refreshUI();
+  await refreshUI();
 }
 
-function showToast(msg){
+function toast(msg){
   const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1A18;color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:500;z-index:999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.2);';
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),2800);
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1A18;color:#fff;padding:12px 22px;border-radius:100px;font-size:14px;font-weight:500;z-index:999;white-space:nowrap;';
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800);
 }
 
 const sel=document.getElementById('emp-select');
-const saved=localStorage.getItem(LS_SAVED_USER);
-if(saved){
-  for(let o of sel.options){ if(o.value===saved){o.selected=true;break;} }
-}
-
-sel.addEventListener('change',function(){
-  localStorage.setItem(LS_SAVED_USER,this.value);
-  refreshUI();
-});
-
+const saved=localStorage.getItem(LS_USER);
+if(saved){for(const o of sel.options){if(o.value===saved){o.selected=true;break;}}}
+sel.addEventListener('change',function(){localStorage.setItem(LS_USER,this.value);refreshUI();});
 document.getElementById('main-btn').addEventListener('click',handleBtn);
-
-startClock();
-refreshUI();
+startClock();refreshUI();
 </script>
 </body>
 </html>
