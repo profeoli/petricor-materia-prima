@@ -10,6 +10,7 @@
 :root{
   --bg:#F7F5F0;--card:#FFFFFF;--text:#1A1A18;--muted:#888780;
   --border:#E8E6E0;--green:#3B6D11;--green-bg:#EAF3DE;--radius:16px;
+  --red:#A32D2D;--red-bg:#FCEBEB;
 }
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
 .emp-header{padding:52px 24px 20px;text-align:center}
@@ -20,6 +21,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .selector-wrap{position:relative}
 select{width:100%;padding:16px 44px 16px 18px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:12px;appearance:none;cursor:pointer;outline:none;transition:border-color 0.2s}
 select:focus{border-color:#888}
+select:disabled{opacity:0.4;cursor:not-allowed}
 .selector-arrow{position:absolute;right:16px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:16px}
 .clock-section{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px 60px;gap:28px}
 .current-time{font-family:'DM Mono',monospace;font-size:54px;font-weight:400;letter-spacing:-1px;line-height:1}
@@ -27,6 +29,7 @@ select:focus{border-color:#888}
 .status-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:100px;font-size:14px;font-weight:500}
 .status-badge.idle{background:var(--bg);border:1px solid var(--border);color:var(--muted)}
 .status-badge.working{background:var(--green-bg);color:var(--green)}
+.status-badge.blocked{background:var(--red-bg);color:var(--red)}
 .badge-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
 .session-info{text-align:center;font-size:13px;color:var(--muted);line-height:1.7}
 .session-time{font-family:'DM Mono',monospace;font-size:24px;font-weight:400;color:var(--text);margin-bottom:2px}
@@ -35,9 +38,11 @@ select:focus{border-color:#888}
 .action-btn:disabled{opacity:0.35;cursor:not-allowed}
 .btn-entrada{background:var(--text);color:#fff}
 .btn-salida{background:#fff;color:var(--text);border:1.5px solid var(--text)}
+.btn-blocked{background:var(--red-bg);color:var(--red);border:1.5px solid #f5c6c6}
 .syncing{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{display:inline-block;animation:spin 1s linear infinite}
+.blocked-msg{text-align:center;font-size:13px;color:var(--red);max-width:280px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -53,14 +58,11 @@ select:focus{border-color:#888}
     <select id="emp-select">
       <option value="">— Elegí tu nombre —</option>
       <option>Galnares Martina</option>
-      <option>Saavedra Chocobar Isais</option>
+      <option>Alexis DAngelo</option>
       <option>Chacón Tortoza Moises</option>
-      <option>Chamorro Luciano</option>
       <option>Barrionuevo Martín</option>
-      <option>Rojas Gabriela</option>
-      <option>Chacon Sebastián</option>
+      <option>Adolfo</option>
       <option>Papa Guadalupe</option>
-      <option>Mejía Facundo</option>
       <option>Isas Nicole</option>
     </select>
     <div class="selector-arrow">▾</div>
@@ -75,7 +77,7 @@ select:focus{border-color:#888}
 
   <div class="status-badge idle" id="status-badge">
     <span class="badge-dot"></span>
-    <span id="status-text">Sin fichar</span>
+    <span id="status-text">Verificando acceso...</span>
   </div>
 
   <div id="session-container" style="display:none">
@@ -86,8 +88,12 @@ select:focus{border-color:#888}
   </div>
 
   <button class="action-btn btn-entrada" id="main-btn" disabled>
-    Registrar entrada
+    Cargando...
   </button>
+
+  <div id="blocked-msg" class="blocked-msg" style="display:none">
+    El fichaje solo está disponible desde la computadora del local.
+  </div>
 
   <div class="syncing" id="sync-status" style="display:none">
     <span class="spin">⟳</span> Sincronizando...
@@ -99,10 +105,21 @@ const SB_URL='https://puyhlwuxhyywattyydmf.supabase.co';
 const SB_KEY='sb_publishable_eLnTvR4daqXX9OCXkKF68A_GVuvyYfW';
 const TABLE='Fichajes';
 const LS_USER='ptc_saved_user';
+const IP_PERMITIDA='152.168.40.164';
 const CIERRE_HORA=22;
+
+let ipPermitida=false;
 
 function hdrs(){
   return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+}
+
+async function checkIP(){
+  try{
+    const r=await fetch('https://api.ipify.org?format=json');
+    const d=await r.json();
+    return d.ip===IP_PERMITIDA;
+  }catch{return false;}
 }
 
 function todayKey(){
@@ -121,16 +138,15 @@ async function getActive(name){
 }
 
 async function cerrarAutomatico(record){
-  // Construir timestamp de cierre: fecha del fichaje a las 22:00
-  const [y,m,d] = record.fecha.split('-').map(Number);
-  const cierreTs = new Date(y, m-1, d, CIERRE_HORA, 0, 0).getTime();
-  const duracion = cierreTs - record.entrada;
+  const [y,m,d]=record.fecha.split('-').map(Number);
+  const cierreTs=new Date(y,m-1,d,CIERRE_HORA,0,0).getTime();
+  const duracion=cierreTs-record.entrada;
   showSync(true);
   try{
     await fetch(`${SB_URL}/rest/v1/${TABLE}?id=eq.${record.id}`,{
       method:'PATCH',
       headers:{...hdrs(),'Prefer':'return=minimal'},
-      body:JSON.stringify({salida:cierreTs, duracion, auto_cierre:true})
+      body:JSON.stringify({salida:cierreTs,duracion,auto_cierre:true})
     });
   }catch(e){console.error(e);}
   showSync(false);
@@ -156,6 +172,23 @@ async function updateRec(id,upd){
 
 function showSync(s){document.getElementById('sync-status').style.display=s?'flex':'none';}
 
+function showBlocked(){
+  const btn=document.getElementById('main-btn');
+  const badge=document.getElementById('status-badge');
+  const stxt=document.getElementById('status-text');
+  const sc=document.getElementById('session-container');
+  const sel=document.getElementById('emp-select');
+  const msg=document.getElementById('blocked-msg');
+  btn.disabled=true;
+  btn.textContent='No disponible';
+  btn.className='action-btn btn-blocked';
+  badge.className='status-badge blocked';
+  stxt.textContent='Solo disponible en el local';
+  sc.style.display='none';
+  sel.disabled=true;
+  msg.style.display='block';
+}
+
 let sessionInterval,currentActive=null;
 
 function startClock(){
@@ -180,6 +213,8 @@ function startSessionTimer(ts){
 }
 
 async function refreshUI(){
+  if(!ipPermitida){showBlocked();return;}
+
   const name=document.getElementById('emp-select').value;
   const btn=document.getElementById('main-btn');
   const badge=document.getElementById('status-badge');
@@ -196,8 +231,7 @@ async function refreshUI(){
   btn.disabled=true;
   const active=await getActive(name);
 
-  // Si hay turno abierto de un día anterior → cerrar automáticamente a las 22hs
-  if(active && active.fecha !== todayKey()){
+  if(active&&active.fecha!==todayKey()){
     await cerrarAutomatico(active);
     currentActive=null;
     btn.disabled=false;btn.textContent='Registrar entrada';btn.className='action-btn btn-entrada';
@@ -220,7 +254,7 @@ async function refreshUI(){
 
 async function handleBtn(){
   const name=document.getElementById('emp-select').value;
-  if(!name)return;
+  if(!name||!ipPermitida)return;
   const now=Date.now();
   document.getElementById('main-btn').disabled=true;
 
@@ -248,7 +282,14 @@ const saved=localStorage.getItem(LS_USER);
 if(saved){for(const o of sel.options){if(o.value===saved){o.selected=true;break;}}}
 sel.addEventListener('change',function(){localStorage.setItem(LS_USER,this.value);refreshUI();});
 document.getElementById('main-btn').addEventListener('click',handleBtn);
-startClock();refreshUI();
+
+startClock();
+
+// Verificar IP al cargar
+checkIP().then(ok=>{
+  ipPermitida=ok;
+  refreshUI();
+});
 </script>
 </body>
 </html>
