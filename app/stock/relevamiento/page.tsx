@@ -3,10 +3,22 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ShoppingCart, Lock } from 'lucide-react';
-import { sbGet, sbPost, getStockStatus, CATEGORIAS_ORDEN } from '@/lib/stock';
+import { sbGet, sbPost, getStockStatus } from '@/lib/stock';
 import type { Producto } from '@/lib/stock';
 
 const ALLOWED_IP = '152.168.40.164';
+
+const PROVEEDORES_ORDEN = [
+  'La Buena Cosecha',
+  'Blancaluna',
+  'Verdulería Tucumán',
+  'Bufano Alimentos',
+  'Fuego Café',
+  'Femsa/Juntos+',
+  'Tregar',
+  'Magbox',
+  'Manteca LB',
+];
 
 export default function RelevamientoPage() {
   const router = useRouter();
@@ -36,12 +48,12 @@ export default function RelevamientoPage() {
 
   useEffect(() => { loadProductos(); }, [loadProductos]);
 
-  const grouped = CATEGORIAS_ORDEN.reduce<Record<string, Producto[]>>((acc, cat) => {
-    const items = productos.filter(p => p.categoria === cat);
-    if (items.length > 0) acc[cat] = items;
+  const grouped = PROVEEDORES_ORDEN.reduce<Record<string, Producto[]>>((acc, prov) => {
+    const items = productos.filter(p => p.proveedor === prov);
+    if (items.length > 0) acc[prov] = items;
     return acc;
   }, {});
-  const otrosProds = productos.filter(p => !CATEGORIAS_ORDEN.includes(p.categoria));
+  const otrosProds = productos.filter(p => !PROVEEDORES_ORDEN.includes(p.proveedor));
   if (otrosProds.length > 0) grouped['Otros'] = otrosProds;
 
   function inputColor(prod: Producto): string {
@@ -152,10 +164,10 @@ export default function RelevamientoPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
-        {Object.entries(grouped).map(([categoria, prods]) => (
-          <div key={categoria} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        {Object.entries(grouped).map(([proveedor, prods]) => (
+          <div key={proveedor} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{categoria}</h2>
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{proveedor}</h2>
             </div>
             <div className="divide-y divide-gray-50">
               {prods.map(prod => {
