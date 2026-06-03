@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShoppingCart, Lock } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Lock, ChevronDown, ChevronRight, Search, X } from 'lucide-react';
 import { sbGet, sbPost, getStockStatus } from '@/lib/stock';
 import type { Producto } from '@/lib/stock';
 
@@ -27,6 +27,8 @@ export default function RelevamientoPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [ipOk, setIpOk] = useState<boolean | null>(null);
+  const [busqueda, setBusqueda] = useState('');
+  const [abiertos, setAbiertos] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch('/api/check-ip')
@@ -48,13 +50,28 @@ export default function RelevamientoPage() {
 
   useEffect(() => { loadProductos(); }, [loadProductos]);
 
+  const busquedaNorm = busqueda.toLowerCase().trim();
+
   const grouped = PROVEEDORES_ORDEN.reduce<Record<string, Producto[]>>((acc, prov) => {
-    const items = productos.filter(p => p.proveedor === prov);
+    const items = productos
+      .filter(p => p.proveedor === prov)
+      .filter(p => busquedaNorm === '' || p.nombre.toLowerCase().includes(busquedaNorm));
     if (items.length > 0) acc[prov] = items;
     return acc;
   }, {});
-  const otrosProds = productos.filter(p => !PROVEEDORES_ORDEN.includes(p.proveedor));
+  const otrosProds = productos
+    .filter(p => !PROVEEDORES_ORDEN.includes(p.proveedor))
+    .filter(p => busquedaNorm === '' || p.nombre.toLowerCase().includes(busquedaNorm));
   if (otrosProds.length > 0) grouped['Otros'] = otrosProds;
+
+  function toggleProveedor(prov: string) {
+    setAbiertos(prev => ({ ...prev, [prov]: !prev[prov] }));
+  }
+
+  function isAbierto(prov: string): boolean {
+    if (busquedaNorm !== '') return true;
+    return abiertos[prov] ?? false;
+  }
 
   function inputColor(prod: Producto): string {
     const raw = cantidades[prod.id];
@@ -158,51 +175,119 @@ export default function RelevamientoPage() {
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ShoppingCart className="w-4 h-4" />
-            {saving ? 'Guardando…' : hayAlertas ? 'Ver alertas y generar pedido' : 'Guardar relevamiento'}
+            {saving ? 'Guardando…' : hayAlertas ? 'Ver alertas' : 'Guardar'}
           </button>
+        </div>
+
+        {/* Buscador */}
+        <div className="max-w-5xl mx-auto mt-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar producto..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              className="w-full pl-9 pr-9 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50"
+            />
+            {busqueda !== '' && (
+              <button
+                onClick={() => setBusqueda('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
-        {Object.entries(grouped).map(([proveedor, prods]) => (
-          <div key={proveedor} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{proveedor}</h2>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {prods.map(prod => {
-                const raw = cantidades[prod.id] ?? '';
-                const val = parseFloat(raw);
-                const status = raw !== '' && !isNaN(val) ? getStockStatus(val, prod.stock_minimo) : null;
-                return (
-                  <div key={prod.id} className="flex items-center justify-between px-5 py-3 gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-400">{prod.unidad}</span>
-                        {prod.stock_minimo != null && <span className="text-xs text-gray-400">· mín {prod.stock_minimo}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {status === 'red' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sin stock</span>}
-                      {status === 'amber' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Bajo</span>}
-                      {status === 'green' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">OK</span>}
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        placeholder="—"
-                        value={cantidades[prod.id] ?? ''}
-                        onChange={e => setCantidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
-                        className={`w-24 text-right text-sm px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-2 transition-colors ${inputColor(prod)}`}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      <div className="max-w-5xl mx-auto px-6 py-6 space-y-3">
+        {Object.keys(grouped).length === 0 && busquedaNorm !== '' && (
+          <div className="text-center py-10 text-sm text-gray-400">
+            No se encontraron productos para "{busqueda}"
           </div>
-        ))}
+        )}
+
+        {Object.entries(grouped).map(([proveedor, prods]) => {
+          const open = isAbierto(proveedor);
+          const ingresadosEnProv = prods.filter(p => {
+            const v = cantidades[p.id];
+            return v !== undefined && v !== '' && !isNaN(parseFloat(v));
+          }).length;
+          const alertasEnProv = prods.filter(p => {
+            const v = cantidades[p.id];
+            if (!v || isNaN(parseFloat(v))) return false;
+            return ['red', 'amber'].includes(getStockStatus(parseFloat(v), p.stock_minimo ?? null));
+          }).length;
+
+          return (
+            <div key={proveedor} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => toggleProveedor(proveedor)}
+                className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {open
+                    ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                    : <ChevronRight className="w-4 h-4 text-gray-400" />
+                  }
+                  <span className="text-sm font-semibold text-gray-700">{proveedor}</span>
+                  <span className="text-xs text-gray-400">{prods.length} productos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {ingresadosEnProv > 0 && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600">
+                      {ingresadosEnProv} ingresados
+                    </span>
+                  )}
+                  {alertasEnProv > 0 && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                      {alertasEnProv} alertas
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {open && (
+                <div className="border-t border-gray-100 divide-y divide-gray-50">
+                  {prods.map(prod => {
+                    const raw = cantidades[prod.id] ?? '';
+                    const val = parseFloat(raw);
+                    const status = raw !== '' && !isNaN(val) ? getStockStatus(val, prod.stock_minimo) : null;
+                    return (
+                      <div key={prod.id} className="flex items-center justify-between px-5 py-3 gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-400">{prod.unidad}</span>
+                            {prod.stock_minimo != null && (
+                              <span className="text-xs text-gray-400">· mín {prod.stock_minimo}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {status === 'red' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sin stock</span>}
+                          {status === 'amber' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Bajo</span>}
+                          {status === 'green' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">OK</span>}
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            placeholder="—"
+                            value={cantidades[prod.id] ?? ''}
+                            onChange={e => setCantidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                            className={`w-24 text-right text-sm px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-2 transition-colors ${inputColor(prod)}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
