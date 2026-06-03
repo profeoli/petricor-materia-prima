@@ -2,11 +2,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShoppingCart, Lock, ChevronDown, ChevronRight, Search, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Lock, ChevronDown, ChevronRight, Search, X, RotateCcw } from 'lucide-react';
 import { sbGet, sbPost, getStockStatus } from '@/lib/stock';
 import type { Producto } from '@/lib/stock';
 
 const ALLOWED_IP = '152.168.40.164';
+const LS_KEY = 'ptc_relevamiento_borrador';
 
 const PROVEEDORES_ORDEN = [
   'La Buena Cosecha',
@@ -48,7 +49,6 @@ function normalizarTexto(texto: string): string {
 function getOpciones(prod: Producto): string[] {
   const conv = CONVERSIONES[prod.nombre];
   const base = prod.unidad;
-
   const opcionesPorBase: Record<string, string[]> = {
     'kg':     ['kg', 'unidad'],
     'unidad': ['unidad', 'kg'],
@@ -56,13 +56,8 @@ function getOpciones(prod: Producto): string[] {
     'litro':  ['litro'],
     'maple':  ['maple'],
   };
-
   const opciones = [...(opcionesPorBase[base] ?? [base])];
-
-  if (conv && !opciones.includes(conv.unidadAlt)) {
-    opciones.push(conv.unidadAlt);
-  }
-
+  if (conv && !opciones.includes(conv.unidadAlt)) opciones.push(conv.unidadAlt);
   return opciones;
 }
 
@@ -70,19 +65,33 @@ function cantidadEnKg(prod: Producto, raw: string, unidadSeleccionada: string): 
   const val = parseFloat(raw);
   if (isNaN(val)) return NaN;
   const conv = CONVERSIONES[prod.nombre];
-  if (conv && unidadSeleccionada === conv.unidadAlt) {
-    return val * conv.kgPorUnidad;
-  }
-  if (unidadSeleccionada === 'gr') {
-    return val / 1000;
-  }
-  if (unidadSeleccionada === 'unidad' && prod.unidad === 'kg') {
-    return val;
-  }
-  if (unidadSeleccionada === 'kg' && prod.unidad === 'unidad') {
-    return val;
-  }
+  if (conv && unidadSeleccionada === conv.unidadAlt) return val * conv.kgPorUnidad;
+  if (unidadSeleccionada === 'gr') return val / 1000;
   return val;
+}
+
+interface Borrador {
+  fecha: string;
+  cantidades: Record<number, string>;
+  unidades: Record<number, string>;
+}
+
+function cargarBorrador(): Borrador | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function guardarBorrador(cantidades: Record<number, string>, unidades: Record<number, string>) {
+  try {
+    const fecha = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(LS_KEY, JSON.stringify({ fecha, cantidades, unidades }));
+  } catch {}
+}
+
+function limpiarBorrador() {
+  try { localStorage.removeItem(LS_KEY); } catch {}
 }
 
 export default function RelevamientoPage() {
@@ -95,6 +104,8 @@ export default function RelevamientoPage() {
   const [ipOk, setIpOk] = useState<boolean | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [abiertos, setAbiertos] = useState<Record<string, boolean>>({});
+  const [borradorFecha, setBorradorFecha] = useState<string | null>(null);
+  const [mostrarBanner, setMostrarBanner] = useState(false);
 
   useEffect(() => {
     fetch('/api/check-ip')
@@ -108,9 +119,22 @@ export default function RelevamientoPage() {
     try {
       const data = await sbGet<Producto>('productos', 'activo=eq.true&order=nombre.asc');
       setProductos(data);
+
+      // Inicializar unidades por defecto
       const initUnidades: Record<number, string> = {};
       data.forEach(p => { initUnidades[p.id] = p.unidad; });
-      setUnidades(initUnidades);
+
+      // Verificar si hay borrador guardado
+      const borrador = cargarBorrador();
+      if (borrador && Object.keys(borrador.cantidades).length > 0) {
+        setBorradorFecha(borrador.fecha);
+        setMostrarBanner(true);
+        // Cargar borrador pero respetar unidades por defecto para productos sin borrador
+        setUnidades({ ...initUnidades, ...borrador.unidades });
+        setCantidades(borrador.cantidades);
+      } else {
+        setUnidades(initUnidades);
+      }
     } catch {
       setProductos([]);
     }
@@ -118,6 +142,23 @@ export default function RelevamientoPage() {
   }, []);
 
   useEffect(() => { loadProductos(); }, [loadProductos]);
+
+  // Guardar borrador automáticamente cada vez que cambian las cantidades
+  useEffect(() => {
+    if (Object.keys(cantidades).length > 0) {
+      guardarBorrador(cantidades, unidades);
+    }
+  }, [cantidades, unidades]);
+
+  function descartarBorrador() {
+    limpiarBorrador();
+    setMostrarBanner(false);
+    setBorradorFecha(null);
+    const initUnidades: Record<number, string> = {};
+    productos.forEach(p => { initUnidades[p.id] = p.unidad; });
+    setCantidades({});
+    setUnidades(initUnidades);
+  }
 
   const busquedaNorm = normalizarTexto(busqueda.trim());
 
@@ -193,6 +234,8 @@ export default function RelevamientoPage() {
         await sbPost('pedido_items', items);
       }
 
+      // Limpiar borrador al confirmar
+      limpiarBorrador();
       router.push(`/stock/pedido/${pedido?.id ?? ''}`);
     } catch (err) {
       console.error(err);
@@ -233,6 +276,11 @@ export default function RelevamientoPage() {
   });
 
   const ingresados = Object.values(cantidades).filter(v => v !== '' && !isNaN(parseFloat(v))).length;
+
+  function fmtFecha(fecha: string) {
+    const [y, m, d] = fecha.split('-');
+    return `${d}/${m}/${y}`;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -278,6 +326,26 @@ export default function RelevamientoPage() {
           </div>
         </div>
       </div>
+
+      {/* Banner de borrador */}
+      {mostrarBanner && borradorFecha && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <RotateCcw className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <p className="text-sm text-amber-800">
+                Relevamiento del <span className="font-semibold">{fmtFecha(borradorFecha)}</span> recuperado — {ingresados} productos ingresados
+              </p>
+            </div>
+            <button
+              onClick={descartarBorrador}
+              className="text-xs text-amber-600 hover:text-amber-800 underline underline-offset-2 flex-shrink-0"
+            >
+              Descartar y empezar de cero
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-3">
         {Object.keys(grouped).length === 0 && busquedaNorm !== '' && (
