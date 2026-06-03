@@ -20,10 +20,37 @@ const PROVEEDORES_ORDEN = [
   'Manteca LB',
 ];
 
+// Peso promedio en kg por unidad o atado
+const CONVERSIONES: Record<string, { unidadAlt: string; kgPorUnidad: number }> = {
+  'Limón':      { unidadAlt: 'unidad', kgPorUnidad: 0.1 },
+  'Pera':       { unidadAlt: 'unidad', kgPorUnidad: 0.18 },
+  'Ciruela':    { unidadAlt: 'unidad', kgPorUnidad: 0.08 },
+  'Manzana':    { unidadAlt: 'unidad', kgPorUnidad: 0.18 },
+  'Cebolla':    { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Naranja':    { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
+  'Pomelo':     { unidadAlt: 'unidad', kgPorUnidad: 0.35 },
+  'Banana':     { unidadAlt: 'unidad', kgPorUnidad: 0.12 },
+  'Palta':      { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
+  'Romero':     { unidadAlt: 'atado',  kgPorUnidad: 0.03 },
+  'Morrón':     { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Papa':       { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Pepino':     { unidadAlt: 'unidad', kgPorUnidad: 0.25 },
+  'Remolacha':  { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
+  'Tomate':     { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Zanahoria':  { unidadAlt: 'unidad', kgPorUnidad: 0.1 },
+  'Zapallo anco': { unidadAlt: 'unidad', kgPorUnidad: 1.5 },
+  'Zucchini':   { unidadAlt: 'unidad', kgPorUnidad: 0.25 },
+};
+
+function normalizarTexto(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 export default function RelevamientoPage() {
   const router = useRouter();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cantidades, setCantidades] = useState<Record<number, string>>({});
+  const [unidades, setUnidades] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [ipOk, setIpOk] = useState<boolean | null>(null);
@@ -42,6 +69,10 @@ export default function RelevamientoPage() {
     try {
       const data = await sbGet<Producto>('productos', 'activo=eq.true&order=nombre.asc');
       setProductos(data);
+      // Inicializar unidades con la unidad por defecto de cada producto
+      const initUnidades: Record<number, string> = {};
+      data.forEach(p => { initUnidades[p.id] = p.unidad; });
+      setUnidades(initUnidades);
     } catch {
       setProductos([]);
     }
@@ -50,18 +81,18 @@ export default function RelevamientoPage() {
 
   useEffect(() => { loadProductos(); }, [loadProductos]);
 
-  const busquedaNorm = busqueda.toLowerCase().trim();
+  const busquedaNorm = normalizarTexto(busqueda.trim());
 
   const grouped = PROVEEDORES_ORDEN.reduce<Record<string, Producto[]>>((acc, prov) => {
     const items = productos
       .filter(p => p.proveedor === prov)
-      .filter(p => busquedaNorm === '' || p.nombre.toLowerCase().includes(busquedaNorm));
+      .filter(p => busquedaNorm === '' || normalizarTexto(p.nombre).includes(busquedaNorm));
     if (items.length > 0) acc[prov] = items;
     return acc;
   }, {});
   const otrosProds = productos
     .filter(p => !PROVEEDORES_ORDEN.includes(p.proveedor))
-    .filter(p => busquedaNorm === '' || p.nombre.toLowerCase().includes(busquedaNorm));
+    .filter(p => busquedaNorm === '' || normalizarTexto(p.nombre).includes(busquedaNorm));
   if (otrosProds.length > 0) grouped['Otros'] = otrosProds;
 
   function toggleProveedor(prov: string) {
@@ -73,16 +104,36 @@ export default function RelevamientoPage() {
     return abiertos[prov] ?? false;
   }
 
+  // Convierte la cantidad ingresada a kg según la unidad seleccionada
+  function cantidadEnKg(prod: Producto, raw: string, unidadSeleccionada: string): number {
+    const val = parseFloat(raw);
+    if (isNaN(val)) return NaN;
+    const conv = CONVERSIONES[prod.nombre];
+    if (conv && unidadSeleccionada === conv.unidadAlt) {
+      return val * conv.kgPorUnidad;
+    }
+    return val;
+  }
+
   function inputColor(prod: Producto): string {
     const raw = cantidades[prod.id];
     if (raw === undefined || raw === '') return 'border-gray-200 focus:ring-indigo-400';
-    const val = parseFloat(raw);
-    if (isNaN(val)) return 'border-gray-200 focus:ring-indigo-400';
-    const status = getStockStatus(val, prod.stock_minimo);
+    const unidadSel = unidades[prod.id] ?? prod.unidad;
+    const valKg = cantidadEnKg(prod, raw, unidadSel);
+    if (isNaN(valKg)) return 'border-gray-200 focus:ring-indigo-400';
+    const status = getStockStatus(valKg, prod.stock_minimo);
     if (status === 'red') return 'border-red-300 bg-red-50 focus:ring-red-400 text-red-700';
     if (status === 'amber') return 'border-amber-300 bg-amber-50 focus:ring-amber-400 text-amber-700';
     if (status === 'green') return 'border-green-300 bg-green-50 focus:ring-green-400 text-green-700';
     return 'border-gray-200 focus:ring-indigo-400';
+  }
+
+  function getOpciones(prod: Producto): string[] {
+    const conv = CONVERSIONES[prod.nombre];
+    if (!conv) return [prod.unidad];
+    const opciones = [prod.unidad];
+    if (!opciones.includes(conv.unidadAlt)) opciones.push(conv.unidadAlt);
+    return opciones;
   }
 
   async function handleGuardar() {
@@ -91,7 +142,12 @@ export default function RelevamientoPage() {
       const fecha = new Date().toISOString().slice(0, 10);
       const entries = Object.entries(cantidades)
         .filter(([, v]) => v !== '' && !isNaN(parseFloat(v)))
-        .map(([id, v]) => ({ fecha, producto_id: parseInt(id), cantidad: parseFloat(v) }));
+        .map(([id, v]) => {
+          const prod = productos.find(p => p.id === parseInt(id))!;
+          const unidadSel = unidades[parseInt(id)] ?? prod.unidad;
+          const cantidad = cantidadEnKg(prod, v, unidadSel);
+          return { fecha, producto_id: parseInt(id), cantidad };
+        });
 
       if (entries.length === 0) {
         alert('Ingresá al menos un producto antes de continuar.');
@@ -151,7 +207,10 @@ export default function RelevamientoPage() {
   const hayAlertas = Object.entries(cantidades).some(([id, v]) => {
     if (v === '' || isNaN(parseFloat(v))) return false;
     const prod = productos.find(p => p.id === parseInt(id));
-    return ['red', 'amber'].includes(getStockStatus(parseFloat(v), prod?.stock_minimo ?? null));
+    if (!prod) return false;
+    const unidadSel = unidades[parseInt(id)] ?? prod.unidad;
+    const valKg = cantidadEnKg(prod, v, unidadSel);
+    return ['red', 'amber'].includes(getStockStatus(valKg, prod?.stock_minimo ?? null));
   });
 
   const ingresados = Object.values(cantidades).filter(v => v !== '' && !isNaN(parseFloat(v))).length;
@@ -179,7 +238,6 @@ export default function RelevamientoPage() {
           </button>
         </div>
 
-        {/* Buscador */}
         <div className="max-w-5xl mx-auto mt-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -218,7 +276,9 @@ export default function RelevamientoPage() {
           const alertasEnProv = prods.filter(p => {
             const v = cantidades[p.id];
             if (!v || isNaN(parseFloat(v))) return false;
-            return ['red', 'amber'].includes(getStockStatus(parseFloat(v), p.stock_minimo ?? null));
+            const unidadSel = unidades[p.id] ?? p.unidad;
+            const valKg = cantidadEnKg(p, v, unidadSel);
+            return ['red', 'amber'].includes(getStockStatus(valKg, p.stock_minimo ?? null));
           }).length;
 
           return (
@@ -253,33 +313,58 @@ export default function RelevamientoPage() {
                 <div className="border-t border-gray-100 divide-y divide-gray-50">
                   {prods.map(prod => {
                     const raw = cantidades[prod.id] ?? '';
-                    const val = parseFloat(raw);
-                    const status = raw !== '' && !isNaN(val) ? getStockStatus(val, prod.stock_minimo) : null;
+                    const unidadSel = unidades[prod.id] ?? prod.unidad;
+                    const valKg = raw !== '' && !isNaN(parseFloat(raw))
+                      ? cantidadEnKg(prod, raw, unidadSel)
+                      : NaN;
+                    const status = !isNaN(valKg) ? getStockStatus(valKg, prod.stock_minimo) : null;
+                    const opciones = getOpciones(prod);
+                    const convierte = CONVERSIONES[prod.nombre] && unidadSel !== prod.unidad;
                     return (
-                      <div key={prod.id} className="flex items-center justify-between px-5 py-3 gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-gray-400">{prod.unidad}</span>
-                            {prod.stock_minimo != null && (
-                              <span className="text-xs text-gray-400">· mín {prod.stock_minimo}</span>
+                      <div key={prod.id} className="px-5 py-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {prod.stock_minimo != null && (
+                                <span className="text-xs text-gray-400">mín {prod.stock_minimo} {prod.unidad}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {status === 'red' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sin stock</span>}
+                            {status === 'amber' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Bajo</span>}
+                            {status === 'green' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">OK</span>}
+                            {opciones.length > 1 && (
+                              <select
+                                value={unidadSel}
+                                onChange={e => setUnidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                              >
+                                {opciones.map(op => (
+                                  <option key={op} value={op}>{op}</option>
+                                ))}
+                              </select>
                             )}
+                            {opciones.length === 1 && (
+                              <span className="text-xs text-gray-400 min-w-[36px] text-right">{prod.unidad}</span>
+                            )}
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              placeholder="—"
+                              value={cantidades[prod.id] ?? ''}
+                              onChange={e => setCantidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                              className={`w-20 text-right text-sm px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-2 transition-colors ${inputColor(prod)}`}
+                            />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {status === 'red' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sin stock</span>}
-                          {status === 'amber' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Bajo</span>}
-                          {status === 'green' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">OK</span>}
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            placeholder="—"
-                            value={cantidades[prod.id] ?? ''}
-                            onChange={e => setCantidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
-                            className={`w-24 text-right text-sm px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-2 transition-colors ${inputColor(prod)}`}
-                          />
-                        </div>
+                        {convierte && raw !== '' && !isNaN(parseFloat(raw)) && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            ≈ {valKg.toFixed(2)} kg
+                          </p>
+                        )}
                       </div>
                     );
                   })}
