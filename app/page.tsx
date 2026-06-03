@@ -70,13 +70,13 @@ export default function HomePage() {
               <p className="text-sm text-gray-500">Fichajes del personal, horas trabajadas y horas extra.</p>
             </Link>
 
-            <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 opacity-50 cursor-not-allowed">
-              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mb-4">
-                <Package className="w-5 h-5 text-gray-400" />
+            <Link href="/stock" className="group bg-white border border-gray-200 rounded-2xl p-6 hover:border-green-300 hover:shadow-md transition-all">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-100 transition-colors">
+                <Package className="w-5 h-5 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-600 mb-1">Stock</h3>
-              <p className="text-sm text-gray-400">Próximamente — control de inventario.</p>
-            </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Stock</h3>
+              <p className="text-sm text-gray-500">Relevá el inventario y generá pedidos a proveedores.</p>
+            </Link>
           </div>
         </section>
 
