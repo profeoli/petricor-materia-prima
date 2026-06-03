@@ -20,30 +20,69 @@ const PROVEEDORES_ORDEN = [
   'Manteca LB',
 ];
 
-// Peso promedio en kg por unidad o atado
 const CONVERSIONES: Record<string, { unidadAlt: string; kgPorUnidad: number }> = {
-  'Limón':      { unidadAlt: 'unidad', kgPorUnidad: 0.1 },
-  'Pera':       { unidadAlt: 'unidad', kgPorUnidad: 0.18 },
-  'Ciruela':    { unidadAlt: 'unidad', kgPorUnidad: 0.08 },
-  'Manzana':    { unidadAlt: 'unidad', kgPorUnidad: 0.18 },
-  'Cebolla':    { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
-  'Naranja':    { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
-  'Pomelo':     { unidadAlt: 'unidad', kgPorUnidad: 0.35 },
-  'Banana':     { unidadAlt: 'unidad', kgPorUnidad: 0.12 },
-  'Palta':      { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
-  'Romero':     { unidadAlt: 'atado',  kgPorUnidad: 0.03 },
-  'Morrón':     { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
-  'Papa':       { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
-  'Pepino':     { unidadAlt: 'unidad', kgPorUnidad: 0.25 },
-  'Remolacha':  { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
-  'Tomate':     { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
-  'Zanahoria':  { unidadAlt: 'unidad', kgPorUnidad: 0.1 },
+  'Limón':        { unidadAlt: 'unidad', kgPorUnidad: 0.1 },
+  'Pera':         { unidadAlt: 'unidad', kgPorUnidad: 0.18 },
+  'Ciruela':      { unidadAlt: 'unidad', kgPorUnidad: 0.08 },
+  'Manzana':      { unidadAlt: 'unidad', kgPorUnidad: 0.18 },
+  'Cebolla':      { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Naranja':      { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
+  'Pomelo':       { unidadAlt: 'unidad', kgPorUnidad: 0.35 },
+  'Banana':       { unidadAlt: 'unidad', kgPorUnidad: 0.12 },
+  'Palta':        { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
+  'Romero':       { unidadAlt: 'gr',     kgPorUnidad: 0.001 },
+  'Morrón':       { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Papa':         { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Pepino':       { unidadAlt: 'unidad', kgPorUnidad: 0.25 },
+  'Remolacha':    { unidadAlt: 'unidad', kgPorUnidad: 0.2 },
+  'Tomate':       { unidadAlt: 'unidad', kgPorUnidad: 0.15 },
+  'Zanahoria':    { unidadAlt: 'unidad', kgPorUnidad: 0.1 },
   'Zapallo anco': { unidadAlt: 'unidad', kgPorUnidad: 1.5 },
-  'Zucchini':   { unidadAlt: 'unidad', kgPorUnidad: 0.25 },
+  'Zucchini':     { unidadAlt: 'unidad', kgPorUnidad: 0.25 },
 };
 
 function normalizarTexto(texto: string): string {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function getOpciones(prod: Producto): string[] {
+  const conv = CONVERSIONES[prod.nombre];
+  const base = prod.unidad;
+
+  const opcionesPorBase: Record<string, string[]> = {
+    'kg':     ['kg', 'unidad'],
+    'unidad': ['unidad', 'kg'],
+    'atado':  ['atado', 'gr'],
+    'litro':  ['litro'],
+    'maple':  ['maple'],
+  };
+
+  const opciones = [...(opcionesPorBase[base] ?? [base])];
+
+  if (conv && !opciones.includes(conv.unidadAlt)) {
+    opciones.push(conv.unidadAlt);
+  }
+
+  return opciones;
+}
+
+function cantidadEnKg(prod: Producto, raw: string, unidadSeleccionada: string): number {
+  const val = parseFloat(raw);
+  if (isNaN(val)) return NaN;
+  const conv = CONVERSIONES[prod.nombre];
+  if (conv && unidadSeleccionada === conv.unidadAlt) {
+    return val * conv.kgPorUnidad;
+  }
+  if (unidadSeleccionada === 'gr') {
+    return val / 1000;
+  }
+  if (unidadSeleccionada === 'unidad' && prod.unidad === 'kg') {
+    return val;
+  }
+  if (unidadSeleccionada === 'kg' && prod.unidad === 'unidad') {
+    return val;
+  }
+  return val;
 }
 
 export default function RelevamientoPage() {
@@ -69,7 +108,6 @@ export default function RelevamientoPage() {
     try {
       const data = await sbGet<Producto>('productos', 'activo=eq.true&order=nombre.asc');
       setProductos(data);
-      // Inicializar unidades con la unidad por defecto de cada producto
       const initUnidades: Record<number, string> = {};
       data.forEach(p => { initUnidades[p.id] = p.unidad; });
       setUnidades(initUnidades);
@@ -104,17 +142,6 @@ export default function RelevamientoPage() {
     return abiertos[prov] ?? false;
   }
 
-  // Convierte la cantidad ingresada a kg según la unidad seleccionada
-  function cantidadEnKg(prod: Producto, raw: string, unidadSeleccionada: string): number {
-    const val = parseFloat(raw);
-    if (isNaN(val)) return NaN;
-    const conv = CONVERSIONES[prod.nombre];
-    if (conv && unidadSeleccionada === conv.unidadAlt) {
-      return val * conv.kgPorUnidad;
-    }
-    return val;
-  }
-
   function inputColor(prod: Producto): string {
     const raw = cantidades[prod.id];
     if (raw === undefined || raw === '') return 'border-gray-200 focus:ring-indigo-400';
@@ -126,14 +153,6 @@ export default function RelevamientoPage() {
     if (status === 'amber') return 'border-amber-300 bg-amber-50 focus:ring-amber-400 text-amber-700';
     if (status === 'green') return 'border-green-300 bg-green-50 focus:ring-green-400 text-green-700';
     return 'border-gray-200 focus:ring-indigo-400';
-  }
-
-  function getOpciones(prod: Producto): string[] {
-    const conv = CONVERSIONES[prod.nombre];
-    if (!conv) return [prod.unidad];
-    const opciones = [prod.unidad];
-    if (!opciones.includes(conv.unidadAlt)) opciones.push(conv.unidadAlt);
-    return opciones;
   }
 
   async function handleGuardar() {
@@ -319,23 +338,22 @@ export default function RelevamientoPage() {
                       : NaN;
                     const status = !isNaN(valKg) ? getStockStatus(valKg, prod.stock_minimo) : null;
                     const opciones = getOpciones(prod);
-                    const convierte = CONVERSIONES[prod.nombre] && unidadSel !== prod.unidad;
+                    const muestraConversion = unidadSel !== prod.unidad && raw !== '' && !isNaN(parseFloat(raw)) && !isNaN(valKg);
+
                     return (
                       <div key={prod.id} className="px-5 py-3">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {prod.stock_minimo != null && (
-                                <span className="text-xs text-gray-400">mín {prod.stock_minimo} {prod.unidad}</span>
-                              )}
-                            </div>
+                            {prod.stock_minimo != null && (
+                              <p className="text-xs text-gray-400 mt-0.5">mín {prod.stock_minimo} {prod.unidad}</p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {status === 'red' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sin stock</span>}
                             {status === 'amber' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Bajo</span>}
                             {status === 'green' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">OK</span>}
-                            {opciones.length > 1 && (
+                            {opciones.length > 1 ? (
                               <select
                                 value={unidadSel}
                                 onChange={e => setUnidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
@@ -345,8 +363,7 @@ export default function RelevamientoPage() {
                                   <option key={op} value={op}>{op}</option>
                                 ))}
                               </select>
-                            )}
-                            {opciones.length === 1 && (
+                            ) : (
                               <span className="text-xs text-gray-400 min-w-[36px] text-right">{prod.unidad}</span>
                             )}
                             <input
@@ -360,9 +377,9 @@ export default function RelevamientoPage() {
                             />
                           </div>
                         </div>
-                        {convierte && raw !== '' && !isNaN(parseFloat(raw)) && (
+                        {muestraConversion && (
                           <p className="text-xs text-gray-400 mt-1 text-right">
-                            ≈ {valKg.toFixed(2)} kg
+                            ≈ {valKg.toFixed(2)} {prod.unidad}
                           </p>
                         )}
                       </div>
