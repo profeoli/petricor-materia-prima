@@ -148,7 +148,7 @@ export default function EnviarPage() {
                 {grupo.enviado && <Check className="w-4 h-4 text-green-500" />}
                 <h2 className={`text-sm font-semibold ${grupo.enviado ? 'text-green-700' : 'text-gray-700'}`}>{grupo.proveedor}</h2>
               </div>
-              {grupo.numero ? (
+            {grupo.numero ? (
                 
                   href={buildWALink(grupo)}
                   target="_blank"
