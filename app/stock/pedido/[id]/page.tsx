@@ -81,7 +81,11 @@ export default function PedidoPage() {
     return `${d}/${m}/${y}`;
   }
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-sm text-gray-400">Cargando...</p></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <p className="text-sm text-gray-400">Cargando...</p>
+    </div>
+  );
 
   if (!pedido) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -111,7 +115,7 @@ export default function PedidoPage() {
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-4 h-4" />
-            {saving ? 'Guardando…' : 'Confirmar y generar mensajes'}
+            {saving ? 'Guardando…' : 'Ver pedido sugerido →'}
           </button>
         </div>
       </div>
@@ -119,7 +123,13 @@ export default function PedidoPage() {
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
         {items.length === 0 && (
           <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
-            <p className="text-sm text-gray-500">No hay productos con alerta en este relevamiento.</p>
+            <p className="text-sm text-gray-500 mb-4">No hay productos con alerta en este relevamiento.</p>
+            <Link
+              href="/stock"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+            >
+              Volver al inicio
+            </Link>
           </div>
         )}
 
@@ -144,6 +154,14 @@ export default function PedidoPage() {
             <div className="divide-y divide-gray-50">
               {amarillos.map(item => <ItemRow key={item.id} item={item} onChangeCantidad={updateCantidad} />)}
             </div>
+          </div>
+        )}
+
+        {items.length > 0 && (
+          <div className="text-center">
+            <Link href="/stock" className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors">
+              Volver al inicio sin generar pedido
+            </Link>
           </div>
         )}
       </div>
