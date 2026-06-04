@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, MessageCircle, Check, Info } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Check, Info, CheckCircle2, Home } from 'lucide-react';
 import { sbGet, sbPatch, getStockStatus } from '@/lib/stock';
 import type { Pedido, PedidoItem, Producto, Relevamiento, Proveedor } from '@/lib/stock';
 
@@ -91,26 +91,53 @@ export default function EnviarPage() {
     return `${d}/${m}/${y}`;
   }
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-sm text-gray-400">Cargando...</p></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <p className="text-sm text-gray-400">Cargando...</p>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center gap-4">
-          <Link href={`/stock/pedido/${id}`} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Enviar pedidos</h1>
-            {pedidoFecha && <p className="text-xs text-gray-500 mt-0.5">Relevamiento del {fmtFecha(pedidoFecha)}</p>}
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href={`/stock/pedido/${id}`} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Enviar pedidos</h1>
+              {pedidoFecha && <p className="text-xs text-gray-500 mt-0.5">Relevamiento del {fmtFecha(pedidoFecha)}</p>}
+            </div>
           </div>
+          <Link
+            href="/stock"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            <Home className="w-4 h-4" />
+            Volver al inicio
+          </Link>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
+
+        {/* Banner de confirmación */}
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-green-800">Stock registrado correctamente</p>
+            <p className="text-xs text-green-600 mt-0.5">El relevamiento quedó guardado. Enviá los pedidos cuando quieras — no es obligatorio para que el stock quede registrado.</p>
+          </div>
+        </div>
+
         {grupos.length === 0 && (
           <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
-            <p className="text-sm text-gray-500">No hay productos para pedir.</p>
+            <p className="text-sm text-gray-500 mb-4">No hay productos para pedir.</p>
+            <Link href="/stock" className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors">
+              <Home className="w-4 h-4" />
+              Volver al inicio
+            </Link>
           </div>
         )}
 
@@ -122,7 +149,7 @@ export default function EnviarPage() {
                 <h2 className={`text-sm font-semibold ${grupo.enviado ? 'text-green-700' : 'text-gray-700'}`}>{grupo.proveedor}</h2>
               </div>
               {grupo.numero ? (
-                <a
+                
                   href={buildWALink(grupo)}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -150,6 +177,15 @@ export default function EnviarPage() {
             </div>
           </div>
         ))}
+
+        {grupos.length > 0 && (
+          <div className="text-center pt-2">
+            <Link href="/stock" className="inline-flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+              <Home className="w-4 h-4" />
+              Volver al inicio de stock
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
