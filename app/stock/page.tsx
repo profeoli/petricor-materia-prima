@@ -1,12 +1,14 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Package, Plus, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Package, Plus, AlertCircle, Clock, CheckCircle2, Send, User } from 'lucide-react';
 import { sbGet, getStockStatus } from '@/lib/stock';
 import type { Pedido, Relevamiento, Producto } from '@/lib/stock';
 
 interface RelevamientoResumen {
   fecha: string;
+  encargado: string | null;
+  pedido_id: number;
   rojos: number;
   amarillos: number;
 }
@@ -32,7 +34,13 @@ export default function StockPage() {
             if (status === 'red') rojos++;
             if (status === 'amber') amarillos++;
           }
-          resumenes.push({ fecha: pedido.fecha, rojos, amarillos });
+          resumenes.push({
+            fecha: pedido.fecha,
+            encargado: (pedido as any).encargado ?? null,
+            pedido_id: pedido.id,
+            rojos,
+            amarillos
+          });
         }
         setUltimos(resumenes);
       } catch {
@@ -71,36 +79,55 @@ export default function StockPage() {
           className="flex items-center justify-center gap-2 w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
-          Nuevo relevamiento
+          Relevar stock
         </Link>
 
         {ultimo && (
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Último relevamiento</p>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
-                <Clock className="w-4 h-4 text-indigo-600" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-indigo-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{fmtFecha(ultimo.fecha)}</span>
               </div>
-              <span className="text-sm font-semibold text-gray-900">{fmtFecha(ultimo.fecha)}</span>
+              {ultimo.encargado && (
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <User className="w-3.5 h-3.5" />
+                  <span>{ultimo.encargado}</span>
+                </div>
+              )}
             </div>
-            <div className="flex gap-3 flex-wrap">
-              {ultimo.rojos > 0 && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-red-500" />
-                  <span className="text-sm font-semibold text-red-600">{ultimo.rojos} sin stock</span>
-                </div>
-              )}
-              {ultimo.amarillos > 0 && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-amber-500" />
-                  <span className="text-sm font-semibold text-amber-600">{ultimo.amarillos} stock bajo</span>
-                </div>
-              )}
-              {ultimo.rojos === 0 && ultimo.amarillos === 0 && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-sm font-semibold text-green-600">Todo OK</span>
-                </div>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex gap-3 flex-wrap">
+                {ultimo.rojos > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                    <span className="text-sm font-semibold text-red-600">{ultimo.rojos} sin stock</span>
+                  </div>
+                )}
+                {ultimo.amarillos > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-semibold text-amber-600">{ultimo.amarillos} stock bajo</span>
+                  </div>
+                )}
+                {ultimo.rojos === 0 && ultimo.amarillos === 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-semibold text-green-600">Todo OK</span>
+                  </div>
+                )}
+              </div>
+              {(ultimo.rojos > 0 || ultimo.amarillos > 0) && (
+                <Link
+                  href={`/stock/pedido/${ultimo.pedido_id}/enviar`}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                  Enviar pedidos
+                </Link>
               )}
             </div>
           </div>
@@ -120,12 +147,15 @@ export default function StockPage() {
           ) : (
             <div className="divide-y divide-gray-50">
               {ultimos.map((r, i) => (
-                <div key={r.fecha + i} className="flex items-center justify-between px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-4 h-4 text-gray-400" />
+                <div key={r.fecha + i} className="flex items-center justify-between px-5 py-3 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <span className="text-sm font-medium text-gray-900">{fmtFecha(r.fecha)}</span>
+                    {r.encargado && (
+                      <span className="text-xs text-gray-400 truncate">{r.encargado}</span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {r.rojos > 0 && (
                       <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">{r.rojos} sin stock</span>
                     )}
