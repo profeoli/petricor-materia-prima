@@ -122,7 +122,6 @@ export default function EnviarPage() {
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
 
-        {/* Banner de confirmación */}
         <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
           <div>
@@ -148,7 +147,7 @@ export default function EnviarPage() {
                 {grupo.enviado && <Check className="w-4 h-4 text-green-500" />}
                 <h2 className={`text-sm font-semibold ${grupo.enviado ? 'text-green-700' : 'text-gray-700'}`}>{grupo.proveedor}</h2>
               </div>
-            {grupo.numero ? (
+              {grupo.numero ? (
                 
                   href={buildWALink(grupo)}
                   target="_blank"
