@@ -19,6 +19,7 @@ const PROVEEDORES_ORDEN = [
   'Tregar',
   'Magbox',
   'Manteca LB',
+  'Frigorífico Martelli',
 ];
 
 const CONVERSIONES: Record<string, { unidadAlt: string; kgPorUnidad: number }> = {
