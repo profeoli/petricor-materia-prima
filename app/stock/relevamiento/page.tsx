@@ -72,6 +72,7 @@ function cantidadEnKg(prod: Producto, raw: string, unidadSeleccionada: string): 
 
 interface Borrador {
   fecha: string;
+  encargado: string;
   cantidades: Record<number, string>;
   unidades: Record<number, string>;
 }
@@ -83,16 +84,18 @@ function cargarBorrador(): Borrador | null {
   } catch { return null; }
 }
 
-function guardarBorrador(cantidades: Record<number, string>, unidades: Record<number, string>) {
+function guardarBorrador(encargado: string, cantidades: Record<number, string>, unidades: Record<number, string>) {
   try {
     const fecha = new Date().toISOString().slice(0, 10);
-    localStorage.setItem(LS_KEY, JSON.stringify({ fecha, cantidades, unidades }));
+    localStorage.setItem(LS_KEY, JSON.stringify({ fecha, encargado, cantidades, unidades }));
   } catch {}
 }
 
 function limpiarBorrador() {
   try { localStorage.removeItem(LS_KEY); } catch {}
 }
+
+const ENCARGADOS = ['Encargado mañana', 'Encargado tarde'];
 
 export default function RelevamientoPage() {
   const router = useRouter();
@@ -106,6 +109,7 @@ export default function RelevamientoPage() {
   const [abiertos, setAbiertos] = useState<Record<string, boolean>>({});
   const [borradorFecha, setBorradorFecha] = useState<string | null>(null);
   const [mostrarBanner, setMostrarBanner] = useState(false);
+  const [encargado, setEncargado] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/check-ip')
@@ -119,17 +123,13 @@ export default function RelevamientoPage() {
     try {
       const data = await sbGet<Producto>('productos', 'activo=eq.true&order=nombre.asc');
       setProductos(data);
-
-      // Inicializar unidades por defecto
       const initUnidades: Record<number, string> = {};
       data.forEach(p => { initUnidades[p.id] = p.unidad; });
-
-      // Verificar si hay borrador guardado
       const borrador = cargarBorrador();
       if (borrador && Object.keys(borrador.cantidades).length > 0) {
         setBorradorFecha(borrador.fecha);
         setMostrarBanner(true);
-        // Cargar borrador pero respetar unidades por defecto para productos sin borrador
+        setEncargado(borrador.encargado ?? null);
         setUnidades({ ...initUnidades, ...borrador.unidades });
         setCantidades(borrador.cantidades);
       } else {
@@ -143,17 +143,17 @@ export default function RelevamientoPage() {
 
   useEffect(() => { loadProductos(); }, [loadProductos]);
 
-  // Guardar borrador automáticamente cada vez que cambian las cantidades
   useEffect(() => {
-    if (Object.keys(cantidades).length > 0) {
-      guardarBorrador(cantidades, unidades);
+    if (encargado && Object.keys(cantidades).length > 0) {
+      guardarBorrador(encargado, cantidades, unidades);
     }
-  }, [cantidades, unidades]);
+  }, [cantidades, unidades, encargado]);
 
   function descartarBorrador() {
     limpiarBorrador();
     setMostrarBanner(false);
     setBorradorFecha(null);
+    setEncargado(null);
     const initUnidades: Record<number, string> = {};
     productos.forEach(p => { initUnidades[p.id] = p.unidad; });
     setCantidades({});
@@ -197,6 +197,7 @@ export default function RelevamientoPage() {
   }
 
   async function handleGuardar() {
+    if (!encargado) return;
     setSaving(true);
     try {
       const fecha = new Date().toISOString().slice(0, 10);
@@ -206,7 +207,7 @@ export default function RelevamientoPage() {
           const prod = productos.find(p => p.id === parseInt(id))!;
           const unidadSel = unidades[parseInt(id)] ?? prod.unidad;
           const cantidad = cantidadEnKg(prod, v, unidadSel);
-          return { fecha, producto_id: parseInt(id), cantidad };
+          return { fecha, producto_id: parseInt(id), cantidad, encargado };
         });
 
       if (entries.length === 0) {
@@ -223,7 +224,7 @@ export default function RelevamientoPage() {
         return status === 'red' || status === 'amber';
       });
 
-      const [pedido] = await sbPost<{ id: number }>('pedidos', { fecha, estado: 'borrador' });
+      const [pedido] = await sbPost<{ id: number }>('pedidos', { fecha, estado: 'borrador', encargado });
 
       if (alertas.length > 0 && pedido?.id) {
         const items = alertas.map(e => {
@@ -234,7 +235,6 @@ export default function RelevamientoPage() {
         await sbPost('pedido_items', items);
       }
 
-      // Limpiar borrador al confirmar
       limpiarBorrador();
       router.push(`/stock/pedido/${pedido?.id ?? ''}`);
     } catch (err) {
@@ -266,6 +266,36 @@ export default function RelevamientoPage() {
     );
   }
 
+  // Pantalla de selección de encargado
+  if (!encargado) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-sm">
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-1">¿Quién está relevando?</h2>
+            <p className="text-sm text-gray-500">Elegí tu turno para continuar</p>
+          </div>
+          <div className="space-y-3">
+            {ENCARGADOS.map(e => (
+              <button
+                key={e}
+                onClick={() => setEncargado(e)}
+                className="w-full py-4 px-5 text-left border border-gray-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all group"
+              >
+                <span className="text-sm font-semibold text-gray-900 group-hover:text-indigo-700">{e}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <Link href="/stock" className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2">
+              Cancelar
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const hayAlertas = Object.entries(cantidades).some(([id, v]) => {
     if (v === '' || isNaN(parseFloat(v))) return false;
     const prod = productos.find(p => p.id === parseInt(id));
@@ -287,12 +317,15 @@ export default function RelevamientoPage() {
       <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/stock" className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button
+              onClick={() => setEncargado(null)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
               <ArrowLeft className="w-5 h-5" />
-            </Link>
+            </button>
             <div>
               <h1 className="text-xl font-bold text-gray-900">Relevamiento</h1>
-              <p className="text-xs text-gray-500 mt-0.5">{ingresados} productos ingresados</p>
+              <p className="text-xs text-gray-500 mt-0.5">{encargado} · {ingresados} productos ingresados</p>
             </div>
           </div>
           <button
@@ -321,144 +354,3 @@ export default function RelevamientoPage() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Banner de borrador */}
-      {mostrarBanner && borradorFecha && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-amber-600 flex-shrink-0" />
-              <p className="text-sm text-amber-800">
-                Relevamiento del <span className="font-semibold">{fmtFecha(borradorFecha)}</span> recuperado — {ingresados} productos ingresados
-              </p>
-            </div>
-            <button
-              onClick={descartarBorrador}
-              className="text-xs text-amber-600 hover:text-amber-800 underline underline-offset-2 flex-shrink-0"
-            >
-              Descartar y empezar de cero
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-3">
-        {Object.keys(grouped).length === 0 && busquedaNorm !== '' && (
-          <div className="text-center py-10 text-sm text-gray-400">
-            No se encontraron productos para "{busqueda}"
-          </div>
-        )}
-
-        {Object.entries(grouped).map(([proveedor, prods]) => {
-          const open = isAbierto(proveedor);
-          const ingresadosEnProv = prods.filter(p => {
-            const v = cantidades[p.id];
-            return v !== undefined && v !== '' && !isNaN(parseFloat(v));
-          }).length;
-          const alertasEnProv = prods.filter(p => {
-            const v = cantidades[p.id];
-            if (!v || isNaN(parseFloat(v))) return false;
-            const unidadSel = unidades[p.id] ?? p.unidad;
-            const valKg = cantidadEnKg(p, v, unidadSel);
-            return ['red', 'amber'].includes(getStockStatus(valKg, p.stock_minimo ?? null));
-          }).length;
-
-          return (
-            <div key={proveedor} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-              <button
-                onClick={() => toggleProveedor(proveedor)}
-                className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  {open
-                    ? <ChevronDown className="w-4 h-4 text-gray-400" />
-                    : <ChevronRight className="w-4 h-4 text-gray-400" />
-                  }
-                  <span className="text-sm font-semibold text-gray-700">{proveedor}</span>
-                  <span className="text-xs text-gray-400">{prods.length} productos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {ingresadosEnProv > 0 && (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600">
-                      {ingresadosEnProv} ingresados
-                    </span>
-                  )}
-                  {alertasEnProv > 0 && (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
-                      {alertasEnProv} alertas
-                    </span>
-                  )}
-                </div>
-              </button>
-
-              {open && (
-                <div className="border-t border-gray-100 divide-y divide-gray-50">
-                  {prods.map(prod => {
-                    const raw = cantidades[prod.id] ?? '';
-                    const unidadSel = unidades[prod.id] ?? prod.unidad;
-                    const valKg = raw !== '' && !isNaN(parseFloat(raw))
-                      ? cantidadEnKg(prod, raw, unidadSel)
-                      : NaN;
-                    const status = !isNaN(valKg) ? getStockStatus(valKg, prod.stock_minimo) : null;
-                    const opciones = getOpciones(prod);
-                    const muestraConversion = unidadSel !== prod.unidad && raw !== '' && !isNaN(parseFloat(raw)) && !isNaN(valKg);
-
-                    return (
-                      <div key={prod.id} className="px-5 py-3">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
-                            {prod.stock_minimo != null && (
-                              <p className="text-xs text-gray-400 mt-0.5">mín {prod.stock_minimo} {prod.unidad}</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {status === 'red' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sin stock</span>}
-                            {status === 'amber' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Bajo</span>}
-                            {status === 'green' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">OK</span>}
-                            {opciones.length > 1 ? (
-                              <select
-                                value={unidadSel}
-                                onChange={e => setUnidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
-                                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                              >
-                                {opciones.map(op => (
-                                  <option key={op} value={op}>{op}</option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="text-xs text-gray-400 min-w-[36px] text-right">{prod.unidad}</span>
-                            )}
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              placeholder="—"
-                              value={cantidades[prod.id] ?? ''}
-                              onChange={e => setCantidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
-                              className={`w-20 text-right text-sm px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-2 transition-colors ${inputColor(prod)}`}
-                            />
-                          </div>
-                        </div>
-                        {muestraConversion && (
-                          <p className="text-xs text-gray-400 mt-1 text-right">
-                            ≈ {valKg.toFixed(2)} {prod.unidad}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
