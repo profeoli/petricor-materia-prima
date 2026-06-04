@@ -169,7 +169,7 @@ export default function EnviarPage() {
                 </h2>
               </div>
               {grupo.numero ? (
-                
+                <a
                   href={buildWALink(grupo)}
                   target="_blank"
                   rel="noopener noreferrer"
