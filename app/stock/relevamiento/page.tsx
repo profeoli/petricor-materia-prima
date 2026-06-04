@@ -267,7 +267,6 @@ export default function RelevamientoPage() {
     );
   }
 
-  // Pantalla de selección de encargado
   if (!encargado) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
@@ -355,3 +354,143 @@ export default function RelevamientoPage() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {mostrarBanner && borradorFecha && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <RotateCcw className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <p className="text-sm text-amber-800">
+                Relevamiento del <span className="font-semibold">{fmtFecha(borradorFecha)}</span> recuperado — {ingresados} productos ingresados
+              </p>
+            </div>
+            <button
+              onClick={descartarBorrador}
+              className="text-xs text-amber-600 hover:text-amber-800 underline underline-offset-2 flex-shrink-0"
+            >
+              Descartar y empezar de cero
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-5xl mx-auto px-6 py-6 space-y-3">
+        {Object.keys(grouped).length === 0 && busquedaNorm !== '' && (
+          <div className="text-center py-10 text-sm text-gray-400">
+            No se encontraron productos para "{busqueda}"
+          </div>
+        )}
+
+        {Object.entries(grouped).map(([proveedor, prods]) => {
+          const open = isAbierto(proveedor);
+          const ingresadosEnProv = prods.filter(p => {
+            const v = cantidades[p.id];
+            return v !== undefined && v !== '' && !isNaN(parseFloat(v));
+          }).length;
+          const alertasEnProv = prods.filter(p => {
+            const v = cantidades[p.id];
+            if (!v || isNaN(parseFloat(v))) return false;
+            const unidadSel = unidades[p.id] ?? p.unidad;
+            const valKg = cantidadEnKg(p, v, unidadSel);
+            return ['red', 'amber'].includes(getStockStatus(valKg, p.stock_minimo ?? null));
+          }).length;
+
+          return (
+            <div key={proveedor} className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => toggleProveedor(proveedor)}
+                className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {open
+                    ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                    : <ChevronRight className="w-4 h-4 text-gray-400" />
+                  }
+                  <span className="text-sm font-semibold text-gray-700">{proveedor}</span>
+                  <span className="text-xs text-gray-400">{prods.length} productos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {ingresadosEnProv > 0 && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600">
+                      {ingresadosEnProv} ingresados
+                    </span>
+                  )}
+                  {alertasEnProv > 0 && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                      {alertasEnProv} alertas
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {open && (
+                <div className="border-t border-gray-100 divide-y divide-gray-50">
+                  {prods.map(prod => {
+                    const raw = cantidades[prod.id] ?? '';
+                    const unidadSel = unidades[prod.id] ?? prod.unidad;
+                    const valKg = raw !== '' && !isNaN(parseFloat(raw))
+                      ? cantidadEnKg(prod, raw, unidadSel)
+                      : NaN;
+                    const status = !isNaN(valKg) ? getStockStatus(valKg, prod.stock_minimo) : null;
+                    const opciones = getOpciones(prod);
+                    const muestraConversion = unidadSel !== prod.unidad && raw !== '' && !isNaN(parseFloat(raw)) && !isNaN(valKg);
+
+                    return (
+                      <div key={prod.id} className="px-5 py-3">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
+                            {prod.stock_minimo != null && (
+                              <p className="text-xs text-gray-400 mt-0.5">mín {prod.stock_minimo} {prod.unidad}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {status === 'red' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sin stock</span>}
+                            {status === 'amber' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">Bajo</span>}
+                            {status === 'green' && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">OK</span>}
+                            {opciones.length > 1 ? (
+                              <select
+                                value={unidadSel}
+                                onChange={e => setUnidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                              >
+                                {opciones.map(op => (
+                                  <option key={op} value={op}>{op}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-xs text-gray-400 min-w-[36px] text-right">{prod.unidad}</span>
+                            )}
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              placeholder="—"
+                              value={cantidades[prod.id] ?? ''}
+                              onChange={e => setCantidades(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                              className={`w-20 text-right text-sm px-3 py-1.5 border rounded-xl focus:outline-none focus:ring-2 transition-colors ${inputColor(prod)}`}
+                            />
+                          </div>
+                        </div>
+                        {muestraConversion && (
+                          <p className="text-xs text-gray-400 mt-1 text-right">
+                            ≈ {valKg.toFixed(2)} {prod.unidad}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
