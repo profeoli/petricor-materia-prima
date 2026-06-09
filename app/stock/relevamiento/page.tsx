@@ -20,6 +20,8 @@ const PROVEEDORES_ORDEN = [
   'Magbox',
   'Manteca LB',
   'Frigorífico Martelli',
+  'Dietética',
+  'Superbe',
 ];
 
 const CONVERSIONES: Record<string, { unidadAlt: string; kgPorUnidad: number }> = {
@@ -212,7 +214,7 @@ export default function RelevamientoPage() {
         });
 
       if (entries.length === 0) {
-        alert('Ingresá al menos un producto antes de continuar.');
+        alert('Ingresa al menos un producto antes de continuar.');
         setSaving(false);
         return;
       }
@@ -240,7 +242,7 @@ export default function RelevamientoPage() {
       router.push(`/stock/pedido/${pedido?.id ?? ''}`);
     } catch (err) {
       console.error(err);
-      alert('Error al guardar. Intentá de nuevo.');
+      alert('Error al guardar. Intenta de nuevo.');
     }
     setSaving(false);
   }
@@ -272,8 +274,8 @@ export default function RelevamientoPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
         <div className="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-sm">
           <div className="text-center mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">¿Quién está relevando?</h2>
-            <p className="text-sm text-gray-500">Elegí tu turno para continuar</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Quien esta relevando?</h2>
+            <p className="text-sm text-gray-500">Elegi tu turno para continuar</p>
           </div>
           <div className="space-y-3">
             {ENCARGADOS.map(e => (
@@ -334,7 +336,7 @@ export default function RelevamientoPage() {
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ShoppingCart className="w-4 h-4" />
-            {saving ? 'Guardando…' : hayAlertas ? 'Ver alertas' : 'Guardar'}
+            {saving ? 'Guardando...' : hayAlertas ? 'Ver alertas' : 'Guardar'}
           </button>
         </div>
 
@@ -446,7 +448,7 @@ export default function RelevamientoPage() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{prod.nombre}</p>
                             {prod.stock_minimo != null && (
-                              <p className="text-xs text-gray-400 mt-0.5">mín {prod.stock_minimo} {prod.unidad}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">min {prod.stock_minimo} {prod.unidad}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -479,7 +481,7 @@ export default function RelevamientoPage() {
                         </div>
                         {muestraConversion && (
                           <p className="text-xs text-gray-400 mt-1 text-right">
-                            ≈ {valKg.toFixed(2)} {prod.unidad}
+                            aprox {valKg.toFixed(2)} {prod.unidad}
                           </p>
                         )}
                       </div>
