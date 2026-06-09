@@ -330,14 +330,23 @@ export default function RelevamientoPage() {
               <p className="text-xs text-gray-500 mt-0.5">{encargado} · {ingresados} productos ingresados</p>
             </div>
           </div>
-          <button
-            onClick={handleGuardar}
-            disabled={saving || ingresados === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            {saving ? 'Guardando...' : hayAlertas ? 'Ver alertas' : 'Guardar'}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/stock"
+              onClick={limpiarBorrador}
+              className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Cancelar
+            </Link>
+            <button
+              onClick={handleGuardar}
+              disabled={saving || ingresados === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              {saving ? 'Guardando...' : hayAlertas ? 'Ver alertas' : 'Guardar'}
+            </button>
+          </div>
         </div>
 
         <div className="max-w-5xl mx-auto mt-3">
