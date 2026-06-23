@@ -10,9 +10,15 @@ const HORA_EXTRA_DESDE = 9;
 const FICHAJE_URL = 'https://petricor-materia-prima.vercel.app/fichaje.html';
 
 const EMPLEADOS = [
-  'Galnares Martina','Saavedra Chocobar Isais','Chacón Tortoza Moises',
-  'Chamorro Luciano','Barrionuevo Martín','Rojas Gabriela',
-  'Chacon Sebastián','Papa Guadalupe','Mejía Facundo','Isas Nicole'
+  'Galnares Martina',
+  'Alexis DAngelo',
+  'Chacón Tortoza Moises',
+  'Barrionuevo Martín',
+  'Adolfo Rodri',
+  'Papa Guadalupe',
+  'Isas Nicole',
+  'Maule Morena',
+  'Gabbie Chacon',
 ];
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
