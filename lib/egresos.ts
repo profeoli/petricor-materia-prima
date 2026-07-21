@@ -1,37 +1,24 @@
+// ---------------------------------------------------------------------------
+// egresos.ts
+// Tipos y helpers del módulo de egresos.
+// NOTA: la persistencia ahora es el Google Sheet (vía /api/append-egresos).
+// Se conservan tipos y utilidades usados por el modal y la tabla en pantalla.
+// ---------------------------------------------------------------------------
+
+// Conceptos reales de facturas de proveedor de Petricor.
 export type ConceptoEgreso =
-  | 'Proveedores'
-  | 'Fijos'
-  | 'RRHH'
-  | 'Limpieza'
-  | 'Mantenimiento'
-  | 'Caja'
-  | 'Otro';
+  | 'Verdulería'
+  | 'Almacén'
+  | 'Carne'
+  | 'Café'
+  | 'Descartable'
+  | 'Limpieza';
 
 export type FormaDePago =
   | 'Transferencia'
   | 'Tarjeta débito'
   | 'Cheque'
   | 'Efectivo';
-
-export interface Egreso {
-  id: string;
-  fecha: string; // DD/MM/AAAA
-  dia: number;
-  mes: number;
-  anio: number;
-  concepto: ConceptoEgreso;
-  insumoRequerido: string;
-  cantidad: number;
-  unidad: string;
-  precioUnitario: number;
-  precioFactura: number;
-  proveedor: string;
-  formaDePago: FormaDePago;
-  numeroFactura: string;
-  comprobante: string;
-  estado: 'pagado' | 'pendiente';
-  fechaPago: string | null;
-}
 
 export interface InvoiceItem {
   descripcion: string;
@@ -49,35 +36,6 @@ export interface InvoiceExtracted {
   totalFactura: number | null;
 }
 
-const LS_KEY = 'petricor_egresos';
-
-export function getEgresos(): Egreso[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveEgresos(egresos: Egreso[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(LS_KEY, JSON.stringify(egresos));
-}
-
-export function addEgresos(nuevos: Egreso[]): void {
-  saveEgresos([...getEgresos(), ...nuevos]);
-}
-
-export function updateEgreso(id: string, updates: Partial<Egreso>): void {
-  saveEgresos(getEgresos().map((e) => (e.id === id ? { ...e, ...updates } : e)));
-}
-
-export function deleteEgreso(id: string): void {
-  saveEgresos(getEgresos().filter((e) => e.id !== id));
-}
-
 export function generateId(): string {
   return typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
@@ -85,13 +43,12 @@ export function generateId(): string {
 }
 
 export const CONCEPTOS: ConceptoEgreso[] = [
-  'Proveedores',
-  'Fijos',
-  'RRHH',
+  'Verdulería',
+  'Almacén',
+  'Carne',
+  'Café',
+  'Descartable',
   'Limpieza',
-  'Mantenimiento',
-  'Caja',
-  'Otro',
 ];
 
 export const FORMAS_PAGO: FormaDePago[] = [
@@ -101,21 +58,23 @@ export const FORMAS_PAGO: FormaDePago[] = [
   'Efectivo',
 ];
 
+// Meses en español para el selector de devengamiento.
+export const MESES = [
+  { num: 1, nombre: 'Enero' },
+  { num: 2, nombre: 'Febrero' },
+  { num: 3, nombre: 'Marzo' },
+  { num: 4, nombre: 'Abril' },
+  { num: 5, nombre: 'Mayo' },
+  { num: 6, nombre: 'Junio' },
+  { num: 7, nombre: 'Julio' },
+  { num: 8, nombre: 'Agosto' },
+  { num: 9, nombre: 'Septiembre' },
+  { num: 10, nombre: 'Octubre' },
+  { num: 11, nombre: 'Noviembre' },
+  { num: 12, nombre: 'Diciembre' },
+];
+
 export function getMesActual(): { mes: number; anio: number } {
   const now = new Date();
   return { mes: now.getMonth() + 1, anio: now.getFullYear() };
-}
-
-export function getKPIs(egresos: Egreso[]) {
-  const { mes, anio } = getMesActual();
-  const delMes = egresos.filter((e) => e.mes === mes && e.anio === anio);
-  const totalMes = delMes.reduce((s, e) => s + (e.precioFactura || 0), 0);
-  const pendientePago = delMes
-    .filter((e) => e.estado === 'pendiente')
-    .reduce((s, e) => s + (e.precioFactura || 0), 0);
-  const porConcepto: Record<string, number> = {};
-  for (const eg of delMes) {
-    porConcepto[eg.concepto] = (porConcepto[eg.concepto] || 0) + (eg.precioFactura || 0);
-  }
-  return { totalMes, pendientePago, porConcepto, count: delMes.length };
 }
