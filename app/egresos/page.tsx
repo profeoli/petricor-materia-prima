@@ -1,4 +1,5 @@
 'use client';
+// modulo de carga de egresos
 import React, { useState } from 'react';
 import { Plus, CheckCircle2, ExternalLink } from 'lucide-react';
 import { CargarFacturaModal } from '@/components/egresos/CargarFacturaModal';
