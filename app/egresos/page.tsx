@@ -1,5 +1,4 @@
 'use client';
-// modulo de carga de egresos
 import React, { useState } from 'react';
 import { Plus, CheckCircle2, ExternalLink } from 'lucide-react';
 import { CargarFacturaModal } from '@/components/egresos/CargarFacturaModal';
@@ -41,7 +40,7 @@ export default function EgresosPage() {
               <p className="text-sm font-semibold text-green-800">
                 {ultimaCarga} {ultimaCarga === 1 ? 'ítem cargado' : 'ítems cargados'} en la planilla
               </p>
-              <p className="text-xs text-green-600 mt-0.5">Se agregaron al final de la pestaña “Carga Egresos”.</p>
+              <p className="text-xs text-green-600 mt-0.5">Se agregaron al final de la pestaña Carga Egresos.</p>
             </div>
             
               href={SHEET_URL}
