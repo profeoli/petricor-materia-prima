@@ -83,7 +83,7 @@ export function CargarFacturaModal({ onClose, onGuardado }: CargarFacturaModalPr
       const res = await fetch('/api/extract-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, mimeType: file.type }),
+        body: JSON.stringify({ image: base64, mimeType: file.type === 'application/pdf' ? 'application/pdf' : 'image/jpeg' }),
       });
       if (!res.ok) throw new Error(`Error ${res.status} al leer la factura`);
       const data: InvoiceExtracted = await res.json();
@@ -112,15 +112,47 @@ export function CargarFacturaModal({ onClose, onGuardado }: CargarFacturaModalPr
     return fecha;
   }
 
-  function fileToBase64(file: File): Promise<string> {
+function fileToBase64(file: File): Promise<string> {
+    // Los PDF se mandan tal cual (no se comprimen como imagen).
+    if (file.type === 'application/pdf') {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    // Las imágenes se redimensionan y comprimen para no superar el límite de subida.
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const maxLado = 1600; // px máximo del lado más largo
+          let { width, height } = img;
+          if (width > height && width > maxLado) {
+            height = Math.round((height * maxLado) / width);
+            width = maxLado;
+          } else if (height >= width && height > maxLado) {
+            width = Math.round((width * maxLado) / height);
+            height = maxLado;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('No se pudo procesar la imagen')); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          resolve(dataUrl.split(',')[1]);
+        };
+        img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+        img.src = reader.result as string;
+      };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   }
-
   function handleFileSelect(file: File) {
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
       setError('Solo se aceptan imágenes o PDF');
