@@ -42,7 +42,7 @@ export default function EgresosPage() {
               </p>
               <p className="text-xs text-green-600 mt-0.5">Se agregaron al final de la pestaña Carga Egresos.</p>
             </div>
-            
+            <a
               href={SHEET_URL}
               target="_blank"
               rel="noopener noreferrer"
