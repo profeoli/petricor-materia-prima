@@ -19,6 +19,7 @@ const EMPLEADOS = [
   'Isas Nicole',
   'Maule Morena',
   'Gabbie Chacon',
+  'Jorge Benitez',
 ];
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
